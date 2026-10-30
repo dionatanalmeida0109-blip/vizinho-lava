@@ -51,7 +51,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 ## Orçamento (tela pós-login, `/home`)
 
 - Botões **Tirar foto da louça** (`capture="environment"`, câmera traseira) e **Escolher da galeria**. A foto anexada fica visível (reduzida e guardada no `sessionStorage`, então sobrevive se o celular recarregar a página ao voltar da câmera) e aparece o botão **Enviar e analisar foto**, que roda a contagem local e leva ao orçamento. A foto **não sai do aparelho** (`src/lib/foto.ts`).
-- Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,30 · talher R$ 0,12 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
+- **Regra de preço: lavagem = 8% do valor de reposição** (`src/lib/reposicao.ts`, preços pesquisados em Havan e similares). Bases (`src/lib/precos.ts`): prato R$ 1,60 · copo R$ 0,20 · talher R$ 0,40 · panela a partir de R$ 4,40 (conforme a condição). O texto "Por que esse preço?" aparece no orçamento e em Como funciona. O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
 - **Promoção no final do orçamento** (`src/lib/promocao.ts`): a tabela fica com os preços base e o desconto (hoje 20%, "Promoção de lançamento") entra só no total — o resumo mostra "era R$ X, agora R$ Y" e quanto o cliente economiza, e a mensagem de WhatsApp leva os dois valores. Para encerrar, `ativa: false`.
 - Depois do total estimado há o botão **Solicitar prestador**: registra o pedido neste aparelho (`src/lib/pedidos.ts`, código curto) e, se o cliente veio pelo link de pedidos de um prestador da região, abre o WhatsApp dele com os itens e o total. Sem prestador escolhido, mostra a confirmação e pede para abrir o link do prestador da região. Sem taxa de deslocamento.
 - "IA" de contagem **local** (`src/lib/estimativa.ts`): estimativa grosseira por canvas (densidade de bordas da foto), sem rede e sem API externa. As quantidades vêm preenchidas e o cliente ajusta com − / +. O app avisa que a contagem é estimativa local e que **o lavador confirma o valor no local** (a foto não mostra gordura queimada no fundo da panela).
@@ -60,7 +60,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 ## Entenda como funciona o trabalho (`/como-funciona`, após login)
 
-- Explica os 4 preços base e mostra a **tabela de utensílios** (`src/lib/catalogo.ts`), só com nomes curtos de peças reais de cozinha: prato, tigela, pote com tampa, tábua de corte; copo, taça, xícara/caneca, garrafa; talher, concha/espátula/escumadeira, faca de cozinha, ralador; panela, caçarola (R$ 1,50), fervedor (R$ 1,50), frigideira (R$ 1,50), panela de pressão (R$ 2,00), travessa, assadeira, forma de bolo, copo do liquidificador, cesto da air fryer (R$ 3,00). Churrasco: grelha R$ 8,00.
+- Explica os 4 preços base e mostra a **tabela de utensílios** (`src/lib/catalogo.ts`), só com nomes curtos de peças reais de cozinha: prato, tigela, pote com tampa, tábua de corte; copo, taça, xícara/caneca, garrafa; talher, concha/espátula/escumadeira, faca de cozinha, ralador; panela, caçarola (R$ 6,40), fervedor (R$ 3,20), frigideira (R$ 6,40), panela de pressão (R$ 7,20), travessa, assadeira, forma de bolo, copo do liquidificador, cesto da air fryer (R$ 5,00). Churrasco: grelha R$ 12,00.
 - **Churrasco** com preços maiores (espeto, grelha, chapa, tábua, travessa com gordura queimada), também no orçamento.
 - **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Fora do escopo:** geladeira e qualquer serviço de diarista.
 - Valores derivados/extras são **de referência** e ajustáveis em `src/lib/catalogo.ts`.
@@ -104,7 +104,7 @@ Convenções:
 - **Rotas**: nunca escreva `'/home'` na mão — use `ROTAS`, `AREA[role]` e `LOGIN[role]` de `src/lib/rotas.ts`.
 - **Botões e cartões**: use os componentes (`<Botao>`, `<BotaoLink>`, `<Cartao>`) em vez de `className="cta"` direto. Nova variante → adicione em `Botao.tsx`.
 - **Cores**: só via `var(--token)`. Cor nova → `tokens.css` primeiro.
-- **Preços**: só em `lib/precos.ts` (bases), `lib/catalogo.ts` (multiplicadores) e `lib/promocao.ts` (desconto final). Telas só exibem.
+- **Preços**: só em `lib/reposicao.ts` (reposição → 8%), `lib/precos.ts` (bases), `lib/catalogo.ts` (multiplicadores) e `lib/promocao.ts` (desconto final). Telas só exibem.
 - **Textos** em PT-BR; nomes de componentes/funções em português, como no resto do app.
 - Antes de subir: `npm run build` (inclui `tsc`) e `npx oxlint src`.
 

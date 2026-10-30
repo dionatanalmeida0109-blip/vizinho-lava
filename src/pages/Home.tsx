@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Apoio, Botao, BotaoExterno, Cartao, LinhaValor, Marcar, Nota, Pagina, Quantidade, Tag, Titulo } from '../components/ui'
+import { ExplicacaoPreco } from '../components/ExplicacaoPreco'
 import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
 import { estimarLouca } from '../lib/estimativa'
@@ -167,6 +168,8 @@ export default function Home() {
           lavador confirma no local. Você também pode preencher sem foto.
         </p>
       </Cartao>
+
+      <ExplicacaoPreco />
 
       <Cartao titulo="2. Utensílios e tabela de preços">
         <table className="tabela">

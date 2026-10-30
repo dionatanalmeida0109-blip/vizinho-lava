@@ -1,11 +1,13 @@
 /**
  * Tabela de utensílios que o cliente vê (/como-funciona e orçamento).
  * Só nomes curtos em português de peças reais de cozinha. A maioria segue as
- * 4 bases de ./precos.ts (base × multiplicador); alguns itens têm preço fixo
- * combinado com o dono (ex.: panela de pressão R$ 2,00).
+ * 4 bases de ./precos.ts (base × multiplicador); os itens com valor de reposição
+ * próprio (frigideira, caçarola, fervedor, pressão, cesto air fryer, grelha)
+ * custam 8% da reposição (./reposicao.ts).
  * Itens "conforme a condição" são confirmados no local.
  */
 import { PRECOS, type Utensilio } from './precos'
+import { lavagem } from './reposicao'
 
 /** Preço derivado: base × multiplicador, arredondado ao centavo. */
 const de = (ref: Utensilio, mult: number) => Math.round(PRECOS[ref].centavos * mult)
@@ -63,15 +65,15 @@ export const CATEGORIAS: Categoria[] = [
     descricao: 'Conforme a condição; o lavador confirma no local.',
     itens: [
       { id: 'panela', nome: 'Panela', base: 'panela', centavos: de('panela', 1), regra: 'Preço de panela', condicao: true },
-      { id: 'cacarola', nome: 'Caçarola', base: 'panela', centavos: 150, regra: 'Preço fixo' },
-      { id: 'fervedor', nome: 'Fervedor (leiteira)', base: 'panela', centavos: 150, regra: 'Preço fixo' },
-      { id: 'frigideira', nome: 'Frigideira', base: 'panela', centavos: 150, regra: 'Preço fixo' },
-      { id: 'pressao', nome: 'Panela de pressão', base: 'panela', centavos: 200, regra: 'Preço fixo' },
+      { id: 'cacarola', nome: 'Caçarola', base: 'panela', centavos: lavagem('cacarola'), regra: '8% da reposição' },
+      { id: 'fervedor', nome: 'Fervedor (leiteira)', base: 'panela', centavos: lavagem('fervedor'), regra: '8% da reposição' },
+      { id: 'frigideira', nome: 'Frigideira', base: 'panela', centavos: lavagem('frigideira'), regra: '8% da reposição' },
+      { id: 'pressao', nome: 'Panela de pressão', base: 'panela', centavos: lavagem('pressao'), regra: '8% da reposição' },
       { id: 'travessa', nome: 'Travessa', base: 'panela', centavos: de('panela', 1), regra: 'Preço de panela', condicao: true },
       { id: 'assadeira', nome: 'Assadeira', base: 'panela', centavos: de('panela', 1), regra: 'Preço de panela', condicao: true },
       { id: 'forma', nome: 'Forma de bolo', base: 'panela', centavos: de('panela', 1), regra: 'Preço de panela', condicao: true },
       { id: 'liquidificador', nome: 'Copo do liquidificador', base: 'panela', centavos: de('panela', 1), regra: 'Preço de panela' },
-      { id: 'airfryer', nome: 'Cesto da air fryer', base: 'panela', centavos: 300, regra: 'Preço fixo (gordura)' },
+      { id: 'airfryer', nome: 'Cesto da air fryer', base: 'panela', centavos: lavagem('airfryer'), regra: '8% da reposição' },
     ],
   },
   {
@@ -84,7 +86,7 @@ export const CATEGORIAS: Categoria[] = [
       { id: 'tabua-churrasco', nome: 'Tábua de churrasco', base: 'churrasco', centavos: de('prato', 3), regra: '3× prato', condicao: true },
       { id: 'travessa-churrasco', nome: 'Travessa com gordura queimada', base: 'churrasco', centavos: de('panela', 2), regra: '2× panela', condicao: true },
       { id: 'chapa', nome: 'Chapa de ferro', base: 'churrasco', centavos: de('panela', 2.5), regra: '2,5× panela', condicao: true },
-      { id: 'grelha', nome: 'Grelha da churrasqueira', base: 'churrasco', centavos: 800, regra: 'Preço fixo' },
+      { id: 'grelha', nome: 'Grelha da churrasqueira', base: 'churrasco', centavos: lavagem('grelha'), regra: '8% da reposição' },
     ],
   },
 ]

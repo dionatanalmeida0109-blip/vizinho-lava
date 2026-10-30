@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Apoio, BotaoLink, Cartao, Nota, Pagina, Titulo } from '../components/ui'
+import { ExplicacaoPreco } from '../components/ExplicacaoPreco'
 import { PROMOCAO } from '../lib/promocao'
 import { ROTAS } from '../lib/rotas'
 import { ADICIONAIS, CATEGORIAS } from '../lib/catalogo'
@@ -16,6 +17,8 @@ export default function ComoFunciona() {
           Cada utensílio tem um preço. Você tira a foto, o app estima a quantidade e monta um
           orçamento base. O lavador confirma o valor no local, antes de começar.
         </>}>Entenda como funciona o trabalho</Titulo>
+
+        <ExplicacaoPreco tabela />
 
         <Cartao titulo="Os 4 preços base">
           <ul className="bases">
