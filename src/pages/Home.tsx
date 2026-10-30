@@ -5,6 +5,7 @@ import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
 import { estimarLouca } from '../lib/estimativa'
 import { ADICIONAIS, CHURRASCO } from '../lib/catalogo'
+import { esquecerPrestador, linkWhatsApp, prestadorEscolhido } from '../lib/linkPrestador'
 import {
   CONTAGEM_VAZIA, LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS,
   reais, subtotalLouca, type Contagem, type Produto,
@@ -23,9 +24,11 @@ export default function Home() {
   const [extras, setExtras] = useState<Record<string, boolean>>({})
   const [produtos, setProdutos] = useState<Record<Produto, boolean>>({ detergente: true, esponja: true })
 
+  const [prestador, setPrestador] = useState(prestadorEscolhido)
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
 
   if (!session) return <Navigate to="/login" replace />
+  if (session.role === 'prestador') return <Navigate to="/prestador" replace />
 
   function sair() {
     signOut()
@@ -64,6 +67,15 @@ export default function Home() {
   const totalChurras = CHURRASCO.reduce((t, i) => t + (churras[i.id] ?? 0) * i.centavos, 0)
   const totalExtras = ADICIONAIS.reduce((t, i) => t + (extras[i.id] ? i.centavos : 0), 0)
   const total = subtotal + totalChurras + taxas + totalExtras
+  function textoPedido() {
+    const linhas = [`Olá! Pedido de lavagem de louça pelo VizinhoLava.`, `Cliente: ${session!.name} (${formatPhone(session!.phone)})`, '']
+    UTENSILIOS.filter((u) => contagem[u] > 0).forEach((u) => linhas.push(`${contagem[u]}× ${PRECOS[u].plural}: ${reais(contagem[u] * PRECOS[u].centavos)}`))
+    CHURRASCO.filter((i) => (churras[i.id] ?? 0) > 0).forEach((i) => linhas.push(`${churras[i.id]}× ${i.nome}: ${reais(churras[i.id] * i.centavos)}`))
+    ADICIONAIS.filter((i) => extras[i.id]).forEach((i) => linhas.push(`${i.nome}: ${reais(i.centavos)}`))
+    if (semProdutos && taxas > 0) linhas.push(`Produtos do lavador: ${reais(taxas)}`)
+    linhas.push('', `Total estimado: ${reais(total)}`, 'Valor final a confirmar no local. Pagamento combinado antes do serviço.')
+    return linhas.join('\n')
+  }
   function ajustarChurras(id: string, delta: number) {
     setChurras((c) => ({ ...c, [id]: Math.max(0, Math.min(99, (c[id] ?? 0) + delta)) }))
   }
@@ -215,7 +227,20 @@ export default function Home() {
             O lavador confirma o valor no local: a foto não mostra, por exemplo, gordura queimada no
             fundo da panela, e o valor da panela depende da condição dela.
           </p>
-          <p className="nota">O pagamento (Pix) é combinado fora do app.</p>
+          <p className="nota">O pagamento (Pix) é combinado <strong>antes</strong> do serviço, fora do app.</p>
+          {prestador ? (
+            <div className="enviar">
+              <a className="cta" href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
+                Enviar pedido para {prestador.nome.split(' ')[0]} no WhatsApp
+              </a>
+              <small>
+                {prestador.nome} · {prestador.regiao} ·{' '}
+                <button className="link" type="button" onClick={() => { esquecerPrestador(); setPrestador(null) }}>trocar prestador</button>
+              </small>
+            </div>
+          ) : (
+            <p className="nota">Para encaminhar o pedido, abra o link de pedidos do prestador da sua região.</p>
+          )}
         </section>
       </main>
     </div>

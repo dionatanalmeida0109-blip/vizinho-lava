@@ -63,6 +63,16 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 - **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Geladeira não entra** (escopo de diarista).
 - Valores derivados/extras são **de referência** e ajustáveis em `src/lib/catalogo.ts`.
 
+## Cliente e Prestador (dois logins, estilo Uber/99)
+
+- Na página inicial (e em `/entrar`) a pessoa escolhe **Sou cliente** ou **Sou prestador**.
+- **Cliente** (`/login` → `/home`): celular + senha, orçamento pela foto, catálogo e "Como funciona".
+- **Prestador** (`/prestador/login` → `/prestador`): cadastro com nome, celular (+55), **região de atendimento** e o **WhatsApp que recebe os pedidos**. No cadastro aparece o aviso de compartilhamento de serviço ("o vizinho sai da casa dele para lavar a sua louça e quer receber pelo serviço; o pagamento é combinado antes, não depois") e é preciso marcar "Entendi".
+- A área do prestador mostra o perfil (editável), como os pedidos chegam e um **link de pedidos** (`/p/<código>`). O cliente que abre esse link fica com o prestador escolhido e, no orçamento, tem o botão **Enviar pedido no WhatsApp** (link `wa.me` com os itens e o total).
+- Cadastros separados (`users` para clientes, `prestadores` para prestadores); o mesmo celular pode ter os dois. Cada tipo só acessa a própria área.
+- O bloqueio de 5 tentativas vale para os dois tipos (chaves separadas). Trocas de senha dos dois tipos aparecem em `/dev/resets` com o rótulo do tipo.
+- Tudo continua **local no navegador**, sem servidor: o encaminhamento é só um link de WhatsApp.
+
 ## Observações
 
 - Os ícones (`public/icon.svg`) são **provisórios** — substituir por ícones definitivos (PNG 192×192 e 512×512).

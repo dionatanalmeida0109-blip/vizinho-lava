@@ -11,7 +11,7 @@ export default function Landing() {
     <div className="pagina">
       <header className="topo">
         <span className="marca">VizinhoLava</span>
-        <Link className="link-topo" to="/login">Entrar</Link>
+        <Link className="link-topo" to="/entrar">Entrar</Link>
       </header>
 
       <main>
@@ -20,9 +20,16 @@ export default function Landing() {
           <p className="sub">
             Simples assim. Você chama, um vizinho de confiança aparece e deixa a pia limpa.
           </p>
-          <Link className="cta" to="/login">
-            Quero contratar
-          </Link>
+          <div className="escolha">
+            <Link className="opcao destaque" to="/login">
+              <strong>Sou cliente</strong>
+              <span>Quero contratar alguém para lavar a louça.</span>
+            </Link>
+            <Link className="opcao" to="/prestador/login">
+              <strong>Sou prestador</strong>
+              <span>Quero lavar louça na casa dos vizinhos e receber.</span>
+            </Link>
+          </div>
         </section>
 
         <section className="passos" aria-label="Como funciona">

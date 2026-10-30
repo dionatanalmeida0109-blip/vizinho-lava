@@ -59,7 +59,7 @@ export default function DevResets() {
           {pedidos.map((p) => (
             <li key={p.id} className={`pedido ${p.status}`}>
               <div>
-                <strong>{p.name}</strong> · {formatPhone(p.phone)}
+                <strong>{p.name}</strong> · {formatPhone(p.phone)} · {p.role === 'prestador' ? 'Prestador' : 'Cliente'}
                 <br />
                 <small>
                   {fmt(p.requestedAt)} · {rotulo[p.status]}
