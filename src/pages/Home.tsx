@@ -13,6 +13,7 @@ import {
   reais, subtotalLouca, type Contagem, type Produto,
 } from '../lib/precos'
 import { PROMOCAO, aplicarPromocao } from '../lib/promocao'
+import { registrarPedido, type Pedido } from '../lib/pedidos'
 import { ROTAS } from '../lib/rotas'
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
   const [estimado, setEstimado] = useState(false)
   const [contagem, setContagem] = useState<Contagem>(CONTAGEM_VAZIA)
   const [semProdutos, setSemProdutos] = useState(false)
+  const [pedido, setPedido] = useState<Pedido | null>(null)
   const [churras, setChurras] = useState<Record<string, number>>({})
   const [extras, setExtras] = useState<Record<string, boolean>>({})
   const [produtos, setProdutos] = useState<Record<Produto, boolean>>({ detergente: true, esponja: true })
@@ -97,9 +99,11 @@ export default function Home() {
     : 0
   const totalChurras = CHURRASCO.reduce((t, i) => t + (churras[i.id] ?? 0) * i.centavos, 0)
   const totalExtras = ADICIONAIS.reduce((t, i) => t + (extras[i.id] ? i.centavos : 0), 0)
-  const total = subtotal + totalChurras + taxas + totalExtras
+  const servicos = subtotal + totalChurras + taxas + totalExtras
   /** Desconto aplicado só no final; a tabela continua com os preços base. */
-  const promo = aplicarPromocao(total)
+  const promo = aplicarPromocao(servicos)
+  const totalOriginal = promo.original
+  const total = promo.final
   function textoPedido() {
     const linhas = [`Olá! Pedido de lavagem de louça pelo VizinhoLava.`, `Cliente: ${session!.name} (${formatPhone(session!.phone)})`, '']
     UTENSILIOS.filter((u) => contagem[u] > 0).forEach((u) => linhas.push(`${contagem[u]}× ${PRECOS[u].plural}: ${reais(contagem[u] * PRECOS[u].centavos)}`))
@@ -108,7 +112,7 @@ export default function Home() {
     if (semProdutos && taxas > 0) linhas.push(`Produtos do lavador: ${reais(taxas)}`)
     linhas.push('')
     if (promo.ativa)
-      linhas.push(`Total estimado: era ${reais(promo.original)}, agora ${reais(promo.final)} (${PROMOCAO.nome}: ${PROMOCAO.percentual}% de desconto)`)
+      linhas.push(`Total estimado: era ${reais(totalOriginal)}, agora ${reais(total)} (${PROMOCAO.nome}: ${PROMOCAO.percentual}% de desconto)`)
     else linhas.push(`Total estimado: ${reais(total)}`)
     linhas.push('Valor final a confirmar no local. Pagamento combinado antes do serviço.')
     return linhas.join('\n')
@@ -250,13 +254,13 @@ export default function Home() {
         {semProdutos && <LinhaValor rotulo="Produtos do lavador">{reais(taxas)}</LinhaValor>}
         {promo.ativa ? (
           <>
-            <LinhaValor rotulo="Total pela tabela" testId="total-original">{reais(promo.original)}</LinhaValor>
+            <LinhaValor rotulo="Total pela tabela" testId="total-original">{reais(totalOriginal)}</LinhaValor>
             <LinhaValor rotulo={`${PROMOCAO.nome} (−${PROMOCAO.percentual}%)`} testId="desconto">− {reais(promo.desconto)}</LinhaValor>
             <div className="promo" data-testid="promo">
               <span className="rotulo">{PROMOCAO.nome}</span>
               <div>
-                era <span className="era">{reais(promo.original)}</span>, agora{' '}
-                <span className="agora" data-testid="total">{reais(promo.final)}</span>
+                era <span className="era">{reais(totalOriginal)}</span>, agora{' '}
+                <span className="agora" data-testid="total">{reais(total)}</span>
               </div>
               <span className="economia">Você economiza {reais(promo.desconto)}</span>
             </div>
@@ -269,6 +273,23 @@ export default function Home() {
           fundo da panela, e o valor da panela depende da condição dela.
         </Nota>
         <Nota>O pagamento (Pix) é combinado <strong>antes</strong> do serviço, fora do app.</Nota>
+        {!pedido ? (
+          <Botao
+            className="solicitar"
+            data-testid="solicitar"
+            disabled={servicos === 0}
+            onClick={() => setPedido(registrarPedido({ telefone: session.phone, total, texto: textoPedido() }))}
+          >
+            Confirmar e solicitar serviço
+          </Botao>
+        ) : (
+          <div className="pedido-ok" data-testid="pedido-ok" role="status">
+            <strong>Pedido {pedido.id} solicitado: {reais(pedido.total)}</strong>
+            <span>Guardamos o pedido neste aparelho. O lavador confirma o valor no local antes de começar.</span>
+            <Botao variante="texto" onClick={() => setPedido(null)}>Alterar orçamento</Botao>
+          </div>
+        )}
+        {servicos === 0 && !pedido && <Nota>Adicione pelo menos um item para solicitar.</Nota>}
         {prestador ? (
           <div className="enviar">
             <BotaoExterno href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
