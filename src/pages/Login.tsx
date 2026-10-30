@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { nameToEmail, normalizeName } from '../lib/authName'
 import { useAuth } from '../auth/AuthContext'
+import { clearFailures, lockMessage, lockRemaining, registerFailure } from '../lib/loginLimiter'
 import { SemConfig } from '../components/SemConfig'
 
 function traduzErro(msg: string): string {
@@ -33,6 +34,12 @@ export default function Login() {
     if (!normalizeName(nome)) return setErro('Digite seu nome.')
     if (senha.length < 6) return setErro('A senha precisa ter pelo menos 6 caracteres.')
 
+    const chave = normalizeName(nome)
+    if (modo === 'entrar') {
+      const restante = lockRemaining(chave)
+      if (restante > 0) return setErro(lockMessage(restante))
+    }
+
     setEnviando(true)
     const email = nameToEmail(nome)
     const { data, error } =
@@ -41,7 +48,16 @@ export default function Login() {
         : await supabase.auth.signUp({ email, password: senha, options: { data: { name: nome.trim() } } })
     setEnviando(false)
 
-    if (error) return setErro(traduzErro(error.message))
+    if (error) {
+      // Só falhas de "Entrar" (senha/nome errados) contam para o bloqueio.
+      if (modo === 'entrar' && /invalid login credentials/i.test(error.message)) {
+        const { lockMs, left } = registerFailure(chave)
+        if (lockMs) return setErro(lockMessage(lockMs))
+        return setErro(`${traduzErro(error.message)} Restam ${left} tentativa${left > 1 ? 's' : ''}.`)
+      }
+      return setErro(traduzErro(error.message))
+    }
+    if (modo === 'entrar') clearFailures(chave)
     if (data.session) navigate('/home', { replace: true })
     else setAviso('Conta criada. Confirme o e-mail no Supabase ou desative a confirmação para entrar.')
   }

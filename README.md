@@ -44,6 +44,7 @@ O login usa Supabase Auth com e-mail/senha, mas o usuário digita só **nome** e
 - **Criar conta:** `signUp` com o mesmo nome+senha; o nome original fica em `user_metadata.name` e aparece na home.
 - Senha mínima: 6 caracteres.
 - Como os e-mails são fictícios, **desative a confirmação de e-mail** no Supabase (Authentication → Providers → Email → "Confirm email").
+- **Proteção contra força bruta (local):** após 5 tentativas erradas de "Entrar" para o mesmo nome, o login desse nome fica bloqueado por 5 minutos (contador em `localStorage`, veja `src/lib/loginLimiter.ts`). É só no navegador; sem serviços externos.
 - Sem `.env` configurado, a tela de login mostra um aviso em vez de quebrar.
 
 ## Variáveis de ambiente
