@@ -51,7 +51,8 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 ## Orçamento (tela pós-login, `/home`)
 
 - Botões **Tirar foto da louça** (`capture="environment"`, câmera traseira) e **Escolher da galeria**. A foto anexada fica visível (reduzida e guardada no `sessionStorage`, então sobrevive se o celular recarregar a página ao voltar da câmera) e aparece o botão **Enviar e analisar foto**, que roda a contagem local e leva ao orçamento. A foto **não sai do aparelho** (`src/lib/foto.ts`).
-- **Regra de preço: lavagem = 8% do valor de reposição** (`src/lib/reposicao.ts`, preços pesquisados em Havan e similares). Bases (`src/lib/precos.ts`): prato R$ 1,60 · copo R$ 0,20 · talher R$ 0,40 · panela a partir de R$ 4,40 (conforme a condição). O texto "Por que esse preço?" aparece no orçamento e em Como funciona. O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
+- Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,30 · talher R$ 0,12 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo. **Preço fixo por peça, não percentual do valor de loja** (a regra dos 8% da reposição foi revertida). Exceções com preço próprio (não quebram; o risco é gordura/dano): **panela de pressão R$ 2,50** (com gordura R$ 3,00–4,00) e **panela elétrica R$ 20,00** (custa ~R$ 400 na loja, mas só se lava a forma externa, como no air fryer). O cartão "Como o preço é feito" explica isso no orçamento e em Como funciona.
+- A foto gera um **orçamento estimado** ("Encaminhe sua foto para um orçamento estimado"). O valor final vem da contagem pós-lavagem do prestador.
 - **Promoção no final do orçamento** (`src/lib/promocao.ts`): a tabela fica com os preços base e o desconto (hoje 20%, "Promoção de lançamento") entra só no total — o resumo mostra "era R$ X, agora R$ Y" e quanto o cliente economiza, e a mensagem de WhatsApp leva os dois valores. Para encerrar, `ativa: false`.
 - Depois do total estimado há o botão **Solicitar prestador**: registra o pedido neste aparelho (`src/lib/pedidos.ts`, código curto) e, se o cliente veio pelo link de pedidos de um prestador da região, abre o WhatsApp dele com os itens e o total. Sem prestador escolhido, mostra a confirmação e pede para abrir o link do prestador da região. Sem taxa de deslocamento.
 - "IA" de contagem **local** (`src/lib/estimativa.ts`): estimativa grosseira por canvas (densidade de bordas da foto), sem rede e sem API externa. As quantidades vêm preenchidas e o cliente ajusta com − / +. O app avisa que a contagem é estimativa local e que **o lavador confirma o valor no local** (a foto não mostra gordura queimada no fundo da panela).
@@ -60,7 +61,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 ## Entenda como funciona o trabalho (`/como-funciona`, após login)
 
-- Explica os 4 preços base e mostra a **tabela de utensílios** (`src/lib/catalogo.ts`), só com nomes curtos de peças reais de cozinha: prato, tigela, pote com tampa, tábua de corte; copo, taça, xícara/caneca, garrafa; talher, concha/espátula/escumadeira, faca de cozinha, ralador; panela, caçarola (R$ 6,40), fervedor (R$ 3,20), frigideira (R$ 6,40), panela de pressão (R$ 7,20), travessa, assadeira, forma de bolo, copo do liquidificador, cesto da air fryer (R$ 5,00). Churrasco: grelha R$ 12,00.
+- Explica os 4 preços base e mostra a **tabela de utensílios** (`src/lib/catalogo.ts`), só com nomes curtos de peças reais de cozinha: prato, tigela, pote com tampa, tábua de corte; copo, taça, xícara/caneca, garrafa; talher, concha/espátula/escumadeira, faca de cozinha, ralador; panela, caçarola (R$ 1,50), fervedor (R$ 1,50), frigideira (R$ 1,50), panela de pressão (R$ 2,00), travessa, assadeira, forma de bolo, copo do liquidificador, cesto da air fryer (R$ 3,00). Churrasco: grelha R$ 8,00.
 - **Churrasco** com preços maiores (espeto, grelha, chapa, tábua, travessa com gordura queimada), também no orçamento.
 - **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Fora do escopo:** geladeira e qualquer serviço de diarista.
 - Valores derivados/extras são **de referência** e ajustáveis em `src/lib/catalogo.ts`.
@@ -70,7 +71,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 - **Por enquanto a entrada mostra só o caminho do cliente** (flag `RECURSOS.MOSTRAR_PRESTADOR = false` em `src/lib/recursos.ts`): Entrar/Cadastre-se vão para `/login`, `/entrar` redireciona para o login do cliente e o cliente novo vai para **Como funciona** → **orçamento por foto** (`/home`). O prestador continua funcionando pelo endereço direto (`/prestador/login`, `/prestador`, `/p/<código>`). Com a flag em `true`, a página inicial e `/entrar` voltam a mostrar **Sou cliente** / **Sou prestador**.
 - **Cliente** (`/login` → `/home`): celular + senha, orçamento pela foto, catálogo e "Como funciona".
 - **Prestador** (`/prestador/login` → `/prestador`): cadastro com nome, celular (DDD + número), **região de atendimento** e o **WhatsApp que recebe os pedidos**. No cadastro aparece o aviso de compartilhamento de serviço ("o vizinho sai da casa dele para lavar a sua louça e quer receber pelo serviço; o pagamento é combinado antes, não depois") e é preciso marcar "Entendi".
-- A área do prestador mostra o perfil (editável), como os pedidos chegam e um **link de pedidos** (`/p/<código>`). O cliente que abre esse link fica com o prestador escolhido e, no orçamento, tem o botão **Enviar pedido no WhatsApp** (link `wa.me` com os itens e o total).
+- A área do prestador mostra o perfil (editável), como os pedidos chegam e um **link de pedidos** (`/p/<código>`) e o botão para a **Contagem pós-lavagem** (`/prestador/contagem`, `src/pages/ContagemPrestador.tsx` + `src/lib/contagem.ts`): depois de lavar, o prestador marca quantas peças de cada item (louça, churrasco, serviços à parte, produtos usados) foram lavadas; o app soma pela tabela (com a promoção, se ativa) e fecha o **valor final**, guarda no aparelho e pode enviar ao WhatsApp do cliente. Pressão tem seletor de preço R$ 2,50–4,00 conforme a gordura. O cliente que abre esse link fica com o prestador escolhido e, no orçamento, tem o botão **Enviar pedido no WhatsApp** (link `wa.me` com os itens e o total).
 - Cadastros separados (`users` para clientes, `prestadores` para prestadores); o mesmo celular pode ter os dois. Cada tipo só acessa a própria área.
 - O bloqueio de 5 tentativas vale para os dois tipos (chaves separadas). Trocas de senha dos dois tipos aparecem em `/dev/resets` com o rótulo do tipo.
 - Tudo continua **local no navegador**, sem servidor: o encaminhamento é só um link de WhatsApp.
@@ -81,7 +82,7 @@ Regra geral: **tela em `pages/`, peça visual em `components/ui/`, regra de neg�
 
 ```
 src/
-  pages/            uma tela por rota (Landing, Entrar, Login, Home, ComoFunciona, Prestador, PrestadorLink, DevResets)
+  pages/            uma tela por rota (Landing, Entrar, Login, Home, ComoFunciona, Prestador, ContagemPrestador, PrestadorLink, DevResets)
   components/
     ui/             peças visuais genéricas — importe sempre de '../components/ui'
       Pagina        casca da tela: cabeçalho (marca + tag + ações) e largura (estreita | larga | livre)
@@ -90,7 +91,7 @@ src/
       Formulario    Formulario, Campo, Marcar (checkbox), Mensagem (erro|ok), Quantidade (− / +)
       Texto         Titulo (+ sub), Apoio, Nota, Tag, CaixaAviso
     AcessoConta, EscolhaPapel/SeletorPapel, AvisoCompartilhamento, ErroTela   peças do domínio VizinhoLava
-  lib/              lógica sem React: localAuth, loginLimiter, phone, password, precos, catalogo, promocao, estimativa, linkPrestador, rotas
+  lib/              lógica sem React: localAuth, loginLimiter, phone, password, precos, catalogo, contagem, promocao, estimativa, linkPrestador, rotas
   auth/             AuthContext (sessão reativa)
   styles/
     tokens.css      variáveis: cores (--mar, --borda, --erro, --alerta-*, --promo…), raios
@@ -104,7 +105,7 @@ Convenções:
 - **Rotas**: nunca escreva `'/home'` na mão — use `ROTAS`, `AREA[role]` e `LOGIN[role]` de `src/lib/rotas.ts`.
 - **Botões e cartões**: use os componentes (`<Botao>`, `<BotaoLink>`, `<Cartao>`) em vez de `className="cta"` direto. Nova variante → adicione em `Botao.tsx`.
 - **Cores**: só via `var(--token)`. Cor nova → `tokens.css` primeiro.
-- **Preços**: só em `lib/reposicao.ts` (reposição → 8%), `lib/precos.ts` (bases), `lib/catalogo.ts` (multiplicadores) e `lib/promocao.ts` (desconto final). Telas só exibem.
+- **Preços**: só em `lib/precos.ts` (bases), `lib/catalogo.ts` (multiplicadores) e `lib/promocao.ts` (desconto final). Telas só exibem.
 - **Textos** em PT-BR; nomes de componentes/funções em português, como no resto do app.
 - Antes de subir: `npm run build` (inclui `tsc`) e `npx oxlint src`.
 

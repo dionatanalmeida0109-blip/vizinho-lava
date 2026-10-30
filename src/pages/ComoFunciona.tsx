@@ -14,11 +14,11 @@ export default function ComoFunciona() {
   return (
     <Pagina largura="larga" direita={<BotaoLink variante="topo" to={ROTAS.orcamento}>Fazer orçamento</BotaoLink>}>
         <Titulo sub={<>
-          Cada utensílio tem um preço. Você tira a foto, o app estima a quantidade e monta um
-          orçamento base. O lavador confirma o valor no local, antes de começar.
+          Cada utensílio tem um preço fixo. Você encaminha a foto para um orçamento estimado; depois
+          da lavagem, o lavador conta as peças lavadas no app e o app fecha o valor final pela tabela.
         </>}>Entenda como funciona o trabalho</Titulo>
 
-        <ExplicacaoPreco tabela />
+        <ExplicacaoPreco excecoes />
 
         <Cartao titulo="Os 4 preços base">
           <ul className="bases">
@@ -51,7 +51,7 @@ export default function ComoFunciona() {
                   <tr key={i.id}>
                     <td>{i.nome}{i.exemplos && <small className="nota-item">{i.exemplos}</small>}</td>
                     <td><small>{i.regra}</small></td>
-                    <td>{i.condicao ? 'a partir de ' : ''}{reais(i.centavos)}</td>
+                    <td>{i.condicao ? 'a partir de ' : ''}{reais(i.centavos)}{i.ate ? ` a ${reais(i.ate)}` : ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -90,8 +90,9 @@ export default function ComoFunciona() {
 
         <Cartao titulo="Como o valor é fechado" destaque="resumo">
           <ol className="fluxo">
-            <li>Você tira a foto e ajusta as quantidades. Isso gera o orçamento base.</li>
-            <li>No local, o lavador confere as peças. A foto não mostra, por exemplo, gordura queimada no fundo da panela.</li>
+            <li>Você encaminha a foto e ajusta as quantidades. Isso gera o <strong>orçamento estimado</strong>.</li>
+            <li>O lavador lava a louça e, no local, conta as peças lavadas e marca no app. A foto não mostra, por exemplo, gordura queimada no fundo da panela.</li>
+            <li>O app soma a contagem pela tabela e fecha o <strong>valor final</strong>.</li>
             {PROMOCAO.ativa && (
               <li>No fim do orçamento entra a {PROMOCAO.nome.toLowerCase()}: {PROMOCAO.percentual}% de desconto sobre o total (você vê o "era" e o "agora").</li>
             )}

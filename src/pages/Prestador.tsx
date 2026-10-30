@@ -84,7 +84,8 @@ export default function Prestador() {
           <li>Divulgue o seu link (no condomínio, no grupo do prédio, num QR code no elevador).</li>
           <li>O cliente abre o link, entra como cliente, tira a foto da louça e monta o orçamento.</li>
           <li>O pedido é encaminhado para o seu WhatsApp ({formatPhone(perfil.whatsapp)}) com os itens e o valor base.</li>
-          <li>Combine o valor e o pagamento (Pix) <strong>antes</strong> de ir. No local, confira as peças — a foto não mostra gordura queimada no fundo da panela.</li>
+          <li>O valor do pedido é um <strong>orçamento estimado</strong> (pela foto). Combine a forma de pagamento (Pix) <strong>antes</strong> de ir.</li>
+          <li>Depois de lavar, conte as peças lavadas na tela <strong>Contagem pós-lavagem</strong>: o app soma pela tabela e fecha o valor final.</li>
         </ol>
         <label className="form">
           <span>Seu link de pedidos</span>
@@ -93,6 +94,11 @@ export default function Prestador() {
         <div className="acoes" style={{ marginTop: 12 }}>
           <Botao onClick={copiar}>{copiado ? 'Link copiado!' : 'Copiar link'}</Botao>
         </div>
+      </Cartao>
+
+      <Cartao titulo="Contagem pós-lavagem" destaque="resumo">
+        <p>Terminou de lavar? Marque quantas peças de cada item foram lavadas e o app calcula o valor final pela tabela.</p>
+        <BotaoLink to={ROTAS.contagemPrestador} data-testid="ir-contagem">Abrir contagem pós-lavagem →</BotaoLink>
       </Cartao>
 
       <Cartao titulo="Tabela que o cliente vê">

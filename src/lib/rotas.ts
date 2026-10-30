@@ -10,6 +10,7 @@ export const ROTAS = {
   orcamento: '/home',
   comoFunciona: '/como-funciona',
   areaPrestador: '/prestador',
+  contagemPrestador: '/prestador/contagem',
   linkPrestador: (codigo: string) => `/p/${codigo}`,
   devResets: '/dev/resets',
 } as const

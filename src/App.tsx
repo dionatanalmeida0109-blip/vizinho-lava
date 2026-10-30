@@ -7,6 +7,7 @@ import ComoFunciona from './pages/ComoFunciona'
 import Entrar from './pages/Entrar'
 import Prestador from './pages/Prestador'
 import PrestadorLink from './pages/PrestadorLink'
+import ContagemPrestador from './pages/ContagemPrestador'
 import DevResets from './pages/DevResets'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/entrar" element={<Entrar />} />
           <Route path="/prestador/login" element={<Login key="prestador" papel="prestador" />} />
           <Route path="/prestador" element={<Prestador />} />
+          <Route path="/prestador/contagem" element={<ContagemPrestador />} />
           <Route path="/p/:codigo" element={<PrestadorLink />} />
           <Route path="/home" element={<Home />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />

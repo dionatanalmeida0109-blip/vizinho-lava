@@ -115,7 +115,7 @@ export default function Home() {
     if (promo.ativa)
       linhas.push(`Total estimado: era ${reais(totalOriginal)}, agora ${reais(total)} (${PROMOCAO.nome}: ${PROMOCAO.percentual}% de desconto)`)
     else linhas.push(`Total estimado: ${reais(total)}`)
-    linhas.push('Valor final a confirmar no local. Pagamento combinado antes do serviço.')
+    linhas.push('Orçamento estimado pela foto. Valor final: contagem das peças lavadas, pela tabela do app.')
     return linhas.join('\n')
   }
   /** Registra o pedido e encaminha para o prestador da região (link de pedidos → WhatsApp). */
@@ -137,7 +137,7 @@ export default function Home() {
       </Link>
 
       <Cartao titulo="1. Foto da louça">
-        <Apoio>Tire uma foto da pia ou da louça empilhada. A foto fica só no seu aparelho.</Apoio>
+        <Apoio>Encaminhe sua foto para um orçamento estimado. Tire uma foto da pia ou da louça empilhada; a foto fica só no seu aparelho.</Apoio>
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={aoEscolherFoto} data-testid="foto" />
         <input ref={galeriaRef} type="file" accept="image/*" hidden onChange={aoEscolherFoto} data-testid="foto-galeria" />
         <div className="acoes-foto">
@@ -256,7 +256,7 @@ export default function Home() {
       </Cartao>
 
       <div ref={resumoRef} className="ancora-resumo" data-testid="resumo">
-      <Cartao titulo="Orçamento base" destaque="resumo" aria-live="polite">
+      <Cartao titulo="Orçamento estimado" destaque="resumo" aria-live="polite">
         <LinhaValor rotulo="Louça">{reais(subtotal)}</LinhaValor>
         {totalChurras > 0 && <LinhaValor rotulo="Churrasco">{reais(totalChurras)}</LinhaValor>}
         {totalExtras > 0 && <LinhaValor rotulo="Serviços à parte">{reais(totalExtras)}</LinhaValor>}
@@ -278,10 +278,11 @@ export default function Home() {
           <LinhaValor rotulo="Total estimado" total testId="total">{reais(total)}</LinhaValor>
         )}
         <Nota>
-          O lavador confirma o valor no local: a foto não mostra, por exemplo, gordura queimada no
-          fundo da panela, e o valor da panela depende da condição dela.
+          Este é um orçamento estimado. O valor final sai da contagem: depois de lavar, o lavador
+          conta as peças lavadas no app e o app soma pela tabela (a foto não mostra, por exemplo,
+          gordura queimada no fundo da panela).
         </Nota>
-        <Nota>O pagamento (Pix) é combinado <strong>antes</strong> do serviço, fora do app.</Nota>
+        <Nota>A forma de pagamento (Pix) é combinada <strong>antes</strong> do serviço, fora do app; o valor é o final da contagem.</Nota>
         {!pedido ? (
           <Botao
             className="solicitar"
@@ -298,7 +299,7 @@ export default function Home() {
               {prestador
                 ? `Encaminhamos o pedido para ${prestador.nome} (${prestador.regiao}) no WhatsApp. Se a conversa não abriu, use o botão abaixo.`
                 : 'Pedido guardado neste aparelho. Abra o link de pedidos do prestador da sua região para encaminhar.'}
-              {' '}O lavador confirma o valor no local antes de começar.
+              {' '}Depois da lavagem, o lavador conta as peças lavadas no app e o valor final sai pela tabela.
             </span>
             <Botao variante="texto" onClick={() => setPedido(null)}>Alterar orçamento</Botao>
           </div>
