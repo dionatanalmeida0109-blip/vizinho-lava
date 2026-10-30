@@ -5,7 +5,8 @@ import { AvisoCompartilhamento } from '../components/AvisoCompartilhamento'
 import { SeletorPapel } from '../components/EscolhaPapel'
 import { Apoio, Botao, BotaoLink, Campo, Formulario, GrupoBotoes, Marcar, Mensagem, Pagina, Tag, Titulo } from '../components/ui'
 import { requestReset, signIn, signOut, signUp, type Role } from '../lib/localAuth'
-import { AREA, NOME_PAPEL, chaveBloqueio } from '../lib/rotas'
+import { RECURSOS } from '../lib/recursos'
+import { AREA, NOME_PAPEL, ROTAS, chaveBloqueio } from '../lib/rotas'
 import { formatPhone, normalizePhone } from '../lib/phone'
 import { clearFailures, lockMessage, lockRemaining, registerFailure } from '../lib/loginLimiter'
 
@@ -30,9 +31,12 @@ export default function Login({ papel = 'cliente' }: { papel?: Role }) {
   const [mesmoWhats, setMesmoWhats] = useState(true)
   const [whats, setWhats] = useState('')
   const [concordo, setConcordo] = useState(false)
+  const [recemCriado, setRecemCriado] = useState(false)
   const prestador = papel === 'prestador'
 
-  if (session && session.role === papel) return <Navigate to={AREA[papel]} replace />
+  // Cliente recém-cadastrado vai primeiro para "como funciona"; de lá, para o orçamento por foto.
+  if (session && session.role === papel)
+    return <Navigate to={recemCriado && !prestador ? ROTAS.comoFunciona : AREA[papel]} replace />
   if (session)
     return (
       <Pagina largura="estreita">
@@ -92,9 +96,14 @@ export default function Login({ papel = 'cliente' }: { papel?: Role }) {
         clearFailures(chave)
         navigate(AREA[papel], { replace: true })
       } else if (modo === 'criar') {
+        setRecemCriado(true)
         const r = await signUp(papel, nome, phone, senha, prestador ? { regiao, whatsapp } : undefined)
-        if (!r.ok) return setErro('Esse telefone já tem conta. Use "Entrar".')
-        navigate(AREA[papel], { replace: true })
+        if (!r.ok) {
+          setRecemCriado(false)
+          return setErro('Esse telefone já tem conta. Use "Entrar".')
+        }
+        // Cliente novo: primeiro "como funciona", de lá vai para o orçamento por foto.
+        navigate(prestador ? AREA[papel] : ROTAS.comoFunciona, { replace: true })
       } else {
         const r = await requestReset(papel, phone, senha)
         if (!r.ok)
@@ -110,7 +119,7 @@ export default function Login({ papel = 'cliente' }: { papel?: Role }) {
   const cadastroPrestador = modo === 'criar' && prestador
   return (
     <Pagina largura="estreita">
-      <SeletorPapel atual={papel} />
+      {(RECURSOS.MOSTRAR_PRESTADOR || prestador) && <SeletorPapel atual={papel} />}
       <h1>{titulos[modo]} <Tag>{NOME_PAPEL[papel]}</Tag></h1>
       <Apoio>{prestador ? 'Para quem vai até a casa do vizinho lavar a louça.' : 'Para quem quer pedir a lavagem da louça.'}</Apoio>
       {cadastroPrestador && <AvisoCompartilhamento />}

@@ -1,12 +1,15 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { EscolhaPapel } from '../components/EscolhaPapel'
 import { Apoio, Nota, Pagina, Titulo } from '../components/ui'
+import { RECURSOS } from '../lib/recursos'
 import { MENSAGEM_COMPARTILHAMENTO, ROTAS } from '../lib/rotas'
 
 /** Escolha do tipo de conta, estilo Uber/99. ?modo=criar abre o cadastro. */
 export default function Entrar() {
   const [params] = useSearchParams()
   const criar = params.get('modo') === 'criar'
+  // Prestador escondido: /entrar vai direto para o login do cliente.
+  if (!RECURSOS.MOSTRAR_PRESTADOR) return <Navigate to={`${ROTAS.loginCliente}${criar ? '?modo=criar' : ''}`} replace />
   return (
     <Pagina largura="estreita">
       <Titulo>{criar ? 'Criar conta: como você quer usar?' : 'Entrar: como você quer usar?'}</Titulo>

@@ -2,6 +2,7 @@ import { useAuth } from '../auth/AuthContext'
 import { AcessoConta } from '../components/AcessoConta'
 import { EscolhaPapel } from '../components/EscolhaPapel'
 import { AcoesTopo, Apoio, BotaoLink, GrupoBotoes, Pagina } from '../components/ui'
+import { RECURSOS } from '../lib/recursos'
 import { AREA, ROTAS } from '../lib/rotas'
 
 const passos = [
@@ -16,8 +17,8 @@ export default function Landing() {
     <BotaoLink variante="topo" to={AREA[session.role]}>Minha área</BotaoLink>
   ) : (
     <AcoesTopo>
-      <BotaoLink variante="topo" to={ROTAS.entrar}>Entrar</BotaoLink>
-      <BotaoLink variante="topo-destaque" to={ROTAS.cadastro}>Cadastre-se</BotaoLink>
+      <BotaoLink variante="topo" to={RECURSOS.MOSTRAR_PRESTADOR ? ROTAS.entrar : ROTAS.loginCliente}>Entrar</BotaoLink>
+      <BotaoLink variante="topo-destaque" to={RECURSOS.MOSTRAR_PRESTADOR ? ROTAS.cadastro : `${ROTAS.loginCliente}?modo=criar`}>Cadastre-se</BotaoLink>
     </AcoesTopo>
   )
 
@@ -33,11 +34,17 @@ export default function Landing() {
         ) : (
           <AcessoConta />
         )}
-        <Apoio>Ou escolha direto como você quer usar:</Apoio>
-        <EscolhaPapel
-          destaque="cliente"
-          textos={{ cliente: 'Quero contratar alguém para lavar a louça.', prestador: 'Quero lavar louça na casa dos vizinhos e receber.' }}
-        />
+        {RECURSOS.MOSTRAR_PRESTADOR ? (
+          <>
+            <Apoio>Ou escolha direto como você quer usar:</Apoio>
+            <EscolhaPapel
+              destaque="cliente"
+              textos={{ cliente: 'Quero contratar alguém para lavar a louça.', prestador: 'Quero lavar louça na casa dos vizinhos e receber.' }}
+            />
+          </>
+        ) : (
+          !session && <Apoio>Crie sua conta, veja como funciona e faça o orçamento pela foto da louça.</Apoio>
+        )}
       </section>
 
       <section className="passos" aria-label="Como funciona">

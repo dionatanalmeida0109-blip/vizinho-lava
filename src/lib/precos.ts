@@ -8,7 +8,7 @@ export type Utensilio = 'prato' | 'copo' | 'talher' | 'panela'
 export const PRECOS: Record<Utensilio, { nome: string; plural: string; centavos: number; nota?: string }> = {
   prato: { nome: 'Prato', plural: 'Pratos', centavos: 40 },
   copo: { nome: 'Copo', plural: 'Copos', centavos: 25 },
-  talher: { nome: 'Talher', plural: 'Talheres', centavos: 8 },
+  talher: { nome: 'Talher', plural: 'Talheres', centavos: 12 },
   panela: {
     nome: 'Panela',
     plural: 'Panelas',

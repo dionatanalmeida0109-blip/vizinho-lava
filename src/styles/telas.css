@@ -49,3 +49,6 @@
 .pedido { background: #fff; border: 1px solid var(--borda); border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pedido small { color: var(--suave); }
 .pedido.denied { opacity: 0.6; }
+.acoes-foto { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.foto-anexada .acoes-foto .cta { flex: 1 1 220px; }
+.ancora-resumo { scroll-margin-top: 12px; }

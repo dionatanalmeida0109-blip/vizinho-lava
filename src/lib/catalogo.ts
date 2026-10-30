@@ -79,8 +79,8 @@ export const CATEGORIAS: Categoria[] = [
     titulo: 'Churrasco',
     descricao: 'Preços maiores: gordura queimada, espetos e grelhas pedem mais tempo.',
     itens: [
-      { id: 'espeto', nome: 'Espeto', base: 'churrasco', centavos: de('talher', 10), regra: '10× talher', condicao: true },
-      { id: 'garfo-trinchante', nome: 'Faca ou garfo de churrasco', base: 'churrasco', centavos: de('talher', 5), regra: '5× talher', condicao: true },
+      { id: 'espeto', nome: 'Espeto', base: 'churrasco', centavos: 80, regra: 'Preço fixo', condicao: true },
+      { id: 'garfo-trinchante', nome: 'Faca ou garfo de churrasco', base: 'churrasco', centavos: 40, regra: 'Preço fixo', condicao: true },
       { id: 'tabua-churrasco', nome: 'Tábua de churrasco', base: 'churrasco', centavos: de('prato', 3), regra: '3× prato', condicao: true },
       { id: 'travessa-churrasco', nome: 'Travessa com gordura queimada', base: 'churrasco', centavos: de('panela', 2), regra: '2× panela', condicao: true },
       { id: 'chapa', nome: 'Chapa de ferro', base: 'churrasco', centavos: de('panela', 2.5), regra: '2,5× panela', condicao: true },

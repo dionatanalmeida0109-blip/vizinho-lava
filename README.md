@@ -15,7 +15,7 @@ VizinhoLava é um app (PWA) para contratar uma pessoa de confiança — um vizin
 
 - [Vite](https://vite.dev/) + [React](https://react.dev/) + TypeScript
 - PWA com [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) (manifest + service worker)
-- `react-router-dom` para as rotas
+- `react-router-dom` para as rotas, recursos, foto
 - **Autenticação 100% local** (localStorage + WebCrypto). Sem Supabase nem qualquer serviço externo — decisão do projeto por enquanto.
 
 ## Rodando localmente
@@ -50,8 +50,8 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 ## Orçamento (tela pós-login, `/home`)
 
-- Botão **Tirar foto da louça** (`<input type="file" accept="image/*" capture="environment">` abre a câmera traseira no celular). A foto **não sai do aparelho**.
-- Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,25 · talher R$ 0,08 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
+- Botões **Tirar foto da louça** (`capture="environment"`, câmera traseira) e **Escolher da galeria**. A foto anexada fica visível (reduzida e guardada no `sessionStorage`, então sobrevive se o celular recarregar a página ao voltar da câmera) e aparece o botão **Enviar e analisar foto**, que roda a contagem local e leva ao orçamento. A foto **não sai do aparelho** (`src/lib/foto.ts`).
+- Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,25 · talher R$ 0,12 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
 - **Promoção no final do orçamento** (`src/lib/promocao.ts`): a tabela fica com os preços base e o desconto (hoje 20%, "Promoção de lançamento") entra só no total — o resumo mostra "era R$ X, agora R$ Y" e quanto o cliente economiza, e a mensagem de WhatsApp leva os dois valores. Para encerrar, `ativa: false`.
 - "IA" de contagem **local** (`src/lib/estimativa.ts`): estimativa grosseira por canvas (densidade de bordas da foto), sem rede e sem API externa. As quantidades vêm preenchidas e o cliente ajusta com − / +. O app avisa que a contagem é estimativa local e que **o lavador confirma o valor no local** (a foto não mostra gordura queimada no fundo da panela).
 - Opção **"Não tenho os produtos adequados"**: o lavador leva os seus e cobra pela utilização — detergente R$ 1,00 e esponja R$ 1,50 (**valores de referência provisórios**, editáveis em `src/lib/precos.ts`).
@@ -66,7 +66,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 ## Cliente e Prestador (dois logins, estilo Uber/99)
 
-- Na página inicial (e em `/entrar`) a pessoa escolhe **Sou cliente** ou **Sou prestador**.
+- **Por enquanto a entrada mostra só o caminho do cliente** (flag `RECURSOS.MOSTRAR_PRESTADOR = false` em `src/lib/recursos.ts`): Entrar/Cadastre-se vão para `/login`, `/entrar` redireciona para o login do cliente e o cliente novo vai para **Como funciona** → **orçamento por foto** (`/home`). O prestador continua funcionando pelo endereço direto (`/prestador/login`, `/prestador`, `/p/<código>`). Com a flag em `true`, a página inicial e `/entrar` voltam a mostrar **Sou cliente** / **Sou prestador**.
 - **Cliente** (`/login` → `/home`): celular + senha, orçamento pela foto, catálogo e "Como funciona".
 - **Prestador** (`/prestador/login` → `/prestador`): cadastro com nome, celular (+55), **região de atendimento** e o **WhatsApp que recebe os pedidos**. No cadastro aparece o aviso de compartilhamento de serviço ("o vizinho sai da casa dele para lavar a sua louça e quer receber pelo serviço; o pagamento é combinado antes, não depois") e é preciso marcar "Entendi".
 - A área do prestador mostra o perfil (editável), como os pedidos chegam e um **link de pedidos** (`/p/<código>`). O cliente que abre esse link fica com o prestador escolhido e, no orçamento, tem o botão **Enviar pedido no WhatsApp** (link `wa.me` com os itens e o total).

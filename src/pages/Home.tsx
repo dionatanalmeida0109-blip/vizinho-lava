@@ -5,6 +5,7 @@ import { Apoio, Botao, BotaoExterno, Cartao, LinhaValor, Marcar, Nota, Pagina, Q
 import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
 import { estimarLouca } from '../lib/estimativa'
+import { fotoComoBlob, fotoGuardada, guardarFoto, prepararFoto } from '../lib/foto'
 import { ADICIONAIS, CHURRASCO } from '../lib/catalogo'
 import { esquecerPrestador, linkWhatsApp, prestadorEscolhido } from '../lib/linkPrestador'
 import {
@@ -17,8 +18,12 @@ import { ROTAS } from '../lib/rotas'
 export default function Home() {
   const session = useAuth()
   const navigate = useNavigate()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [foto, setFoto] = useState<string | null>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galeriaRef = useRef<HTMLInputElement>(null)
+  const resumoRef = useRef<HTMLDivElement>(null)
+  const [foto, setFoto] = useState<string | null>(fotoGuardada)
+  const [anexando, setAnexando] = useState(false)
+  const [erroFoto, setErroFoto] = useState<string | null>(null)
   const [analisando, setAnalisando] = useState(false)
   const [estimado, setEstimado] = useState(false)
   const [contagem, setContagem] = useState<Contagem>(CONTAGEM_VAZIA)
@@ -28,31 +33,54 @@ export default function Home() {
   const [produtos, setProdutos] = useState<Record<Produto, boolean>>({ detergente: true, esponja: true })
 
   const [prestador, setPrestador] = useState(prestadorEscolhido)
-  useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
+  useEffect(() => { guardarFoto(foto) }, [foto])
 
   if (!session) return <Navigate to={ROTAS.loginCliente} replace />
   if (session.role === 'prestador') return <Navigate to={ROTAS.areaPrestador} replace />
 
   function sair() {
+    guardarFoto(null)
     signOut()
     navigate(ROTAS.loginCliente, { replace: true })
   }
 
+  /** Só anexa e mostra a foto; a contagem roda quando o cliente toca em "Analisar". */
   async function aoEscolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0]
-    e.target.value = ''
     if (!arquivo) return
-    setFoto(URL.createObjectURL(arquivo))
-    setAnalisando(true)
+    setAnexando(true)
+    setErroFoto(null)
     try {
-      setContagem(await estimarLouca(arquivo))
+      setFoto(await prepararFoto(arquivo))
+      setEstimado(false)
+    } catch {
+      setErroFoto('Não consegui abrir essa foto. Tente outra ou escolha da galeria.')
+    } finally {
+      setAnexando(false)
+      e.target.value = ''
+    }
+  }
+
+  async function analisarFoto() {
+    if (!foto) return
+    setAnalisando(true)
+    setErroFoto(null)
+    try {
+      setContagem(await estimarLouca(await fotoComoBlob(foto)))
       setEstimado(true)
     } catch {
-      setContagem(CONTAGEM_VAZIA)
       setEstimado(false)
+      setErroFoto('Não deu para contar por essa foto. Preencha as quantidades abaixo.')
     } finally {
       setAnalisando(false)
+      requestAnimationFrame(() => resumoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     }
+  }
+
+  function removerFoto() {
+    setFoto(null)
+    setEstimado(false)
+    setErroFoto(null)
   }
 
   function ajustar(u: keyof Contagem, delta: number) {
@@ -99,13 +127,31 @@ export default function Home() {
 
       <Cartao titulo="1. Foto da louça">
         <Apoio>Tire uma foto da pia ou da louça empilhada. A foto fica só no seu aparelho.</Apoio>
-        <input ref={inputRef} type="file" accept="image/*" capture="environment" hidden onChange={aoEscolherFoto} data-testid="foto" />
-        <Botao onClick={() => inputRef.current?.click()} disabled={analisando}>
-          📷 {foto ? 'Tirar outra foto' : 'Tirar foto da louça'}
-        </Botao>
-        {foto && <img className="preview" src={foto} alt="Foto da louça" />}
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={aoEscolherFoto} data-testid="foto" />
+        <input ref={galeriaRef} type="file" accept="image/*" hidden onChange={aoEscolherFoto} data-testid="foto-galeria" />
+        <div className="acoes-foto">
+          <Botao variante={foto ? 'secundario' : 'primario'} onClick={() => cameraRef.current?.click()} disabled={anexando || analisando}>
+            📷 {foto ? 'Tirar outra foto' : 'Tirar foto da louça'}
+          </Botao>
+          <Botao variante="secundario" onClick={() => galeriaRef.current?.click()} disabled={anexando || analisando}>
+            🖼️ Escolher da galeria
+          </Botao>
+        </div>
+        {anexando && <Nota>Anexando foto…</Nota>}
+        {foto && (
+          <div className="foto-anexada" data-testid="foto-anexada">
+            <img className="preview" src={foto} alt="Foto da louça anexada" />
+            <div className="acoes-foto">
+              <Botao onClick={analisarFoto} disabled={analisando} data-testid="analisar">
+                {analisando ? 'Analisando…' : '✅ Enviar e analisar foto'}
+              </Botao>
+              <Botao variante="texto" onClick={removerFoto} disabled={analisando}>Remover foto</Botao>
+            </div>
+          </div>
+        )}
+        {erroFoto && <Nota>{erroFoto}</Nota>}
         {analisando && <Nota>Contando utensílios…</Nota>}
-        {estimado && !analisando && <Nota>Contagem estimada a partir da foto. Confira e ajuste abaixo.</Nota>}
+        {estimado && !analisando && <Nota>Foto analisada: contagem preenchida abaixo e orçamento atualizado. Confira e ajuste.</Nota>}
         <p className="aviso-ia">
           <strong>Contagem é estimativa local</strong> (feita no seu aparelho, sem enviar a foto) e o
           lavador confirma no local. Você também pode preencher sem foto.
@@ -193,6 +239,7 @@ export default function Home() {
         <Nota>Geladeira e serviços de diarista não estão incluídos.</Nota>
       </Cartao>
 
+      <div ref={resumoRef} className="ancora-resumo" data-testid="resumo">
       <Cartao titulo="Orçamento base" destaque="resumo" aria-live="polite">
         <LinhaValor rotulo="Louça">{reais(subtotal)}</LinhaValor>
         {totalChurras > 0 && <LinhaValor rotulo="Churrasco">{reais(totalChurras)}</LinhaValor>}
@@ -233,6 +280,7 @@ export default function Home() {
           <Nota>Para encaminhar o pedido, abra o link de pedidos do prestador da sua região.</Nota>
         )}
       </Cartao>
+      </div>
     </Pagina>
   )
 }
