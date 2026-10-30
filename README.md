@@ -54,7 +54,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 - Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,25 · talher R$ 0,12 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
 - **Promoção no final do orçamento** (`src/lib/promocao.ts`): a tabela fica com os preços base e o desconto (hoje 20%, "Promoção de lançamento") entra só no total — o resumo mostra "era R$ X, agora R$ Y" e quanto o cliente economiza, e a mensagem de WhatsApp leva os dois valores. Para encerrar, `ativa: false`.
 - "IA" de contagem **local** (`src/lib/estimativa.ts`): estimativa grosseira por canvas (densidade de bordas da foto), sem rede e sem API externa. As quantidades vêm preenchidas e o cliente ajusta com − / +. O app avisa que a contagem é estimativa local e que **o lavador confirma o valor no local** (a foto não mostra gordura queimada no fundo da panela).
-- Opção **"Não tenho os produtos adequados"**: o lavador leva os seus e cobra pela utilização — detergente R$ 1,00 e esponja R$ 1,50 (**valores de referência provisórios**, editáveis em `src/lib/precos.ts`).
+- Opção **"Não tenho os produtos adequados"**: o lavador leva os seus e cobra pela utilização — esponja R$ 1,50 e detergente R$ 1,00 (tabela em "Como funciona" e no orçamento) (**valores de referência provisórios**, editáveis em `src/lib/precos.ts`).
 - Mostra o orçamento base (louça + produtos). Pagamento via Pix combinado fora do app.
 
 ## Entenda como funciona o trabalho (`/como-funciona`, após login)

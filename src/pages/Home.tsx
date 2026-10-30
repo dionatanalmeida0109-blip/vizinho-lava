@@ -225,6 +225,9 @@ export default function Home() {
             ))}
           </ul>
         )}
+        {!semProdutos && (
+          <Nota>Tabela: {LISTA_PRODUTOS.map((p) => `${PRODUTOS[p].nome} ${reais(PRODUTOS[p].centavos)}`).join(' · ')}. Só cobra se o lavador levar.</Nota>
+        )}
       </Cartao>
 
       <Cartao titulo={<>Serviços à parte <Tag>não é louça</Tag></>}>

@@ -25,10 +25,10 @@ export const UTENSILIOS: Utensilio[] = ['prato', 'copo', 'talher', 'panela']
  */
 export type Produto = 'detergente' | 'esponja'
 export const PRODUTOS: Record<Produto, { nome: string; centavos: number }> = {
-  detergente: { nome: 'Uso de detergente do lavador', centavos: 100 },
-  esponja: { nome: 'Uso de esponja do lavador', centavos: 150 },
+  esponja: { nome: 'Esponja (do lavador)', centavos: 150 },
+  detergente: { nome: 'Detergente (do lavador)', centavos: 100 },
 }
-export const LISTA_PRODUTOS: Produto[] = ['detergente', 'esponja']
+export const LISTA_PRODUTOS: Produto[] = ['esponja', 'detergente']
 
 export type Contagem = Record<Utensilio, number>
 export const CONTAGEM_VAZIA: Contagem = { prato: 0, copo: 0, talher: 0, panela: 0 }

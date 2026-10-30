@@ -4,7 +4,7 @@ import { Apoio, BotaoLink, Cartao, Nota, Pagina, Titulo } from '../components/ui
 import { PROMOCAO } from '../lib/promocao'
 import { ROTAS } from '../lib/rotas'
 import { ADICIONAIS, CATEGORIAS } from '../lib/catalogo'
-import { PRECOS, UTENSILIOS, reais } from '../lib/precos'
+import { LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS, reais } from '../lib/precos'
 
 export default function ComoFunciona() {
   const session = useAuth()
@@ -69,6 +69,20 @@ export default function ComoFunciona() {
             </tbody>
           </table>
           <Nota>Fora do escopo: geladeira e qualquer serviço de diarista (faxina, banheiro, roupa). O VizinhoLava faz louça + fogão e micro-ondas.</Nota>
+        </Cartao>
+
+        <Cartao titulo="Produtos de limpeza do lavador">
+          <Apoio>Só se você não tiver os produtos adequados: o lavador leva os dele e cobra pelo uso.</Apoio>
+          <table className="tabela catalogo" data-testid="tabela-produtos">
+            <tbody>
+              {LISTA_PRODUTOS.map((p) => (
+                <tr key={p}>
+                  <td>{PRODUTOS[p].nome}</td>
+                  <td>{reais(PRODUTOS[p].centavos)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </Cartao>
 
         <Cartao titulo="Como o valor é fechado" destaque="resumo">
