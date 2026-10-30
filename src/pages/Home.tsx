@@ -190,7 +190,7 @@ export default function Home() {
             </li>
           ))}
         </ul>
-        <Nota>Geladeira não está incluída (serviço de diarista).</Nota>
+        <Nota>Geladeira e serviços de diarista não estão incluídos.</Nota>
       </Cartao>
 
       <Cartao titulo="Orçamento base" destaque="resumo" aria-live="polite">

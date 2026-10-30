@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Apoio, BotaoLink, Cartao, Nota, Pagina, Titulo } from '../components/ui'
 import { PROMOCAO } from '../lib/promocao'
 import { ROTAS } from '../lib/rotas'
-import { ADICIONAIS, CATEGORIAS, FONTES } from '../lib/catalogo'
+import { ADICIONAIS, CATEGORIAS } from '../lib/catalogo'
 import { PRECOS, UTENSILIOS, reais } from '../lib/precos'
 
 export default function ComoFunciona() {
@@ -24,10 +24,10 @@ export default function ComoFunciona() {
                 <strong>{PRECOS[u].nome}</strong>
                 <span className="preco">{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</span>
                 <small>
-                  {u === 'prato' && 'Pratos, bowls, potes e outras peças de servir.'}
-                  {u === 'copo' && 'Copos, taças, xícaras e o que serve bebida.'}
-                  {u === 'talher' && 'Garfos, facas, colheres e utensílios de mão.'}
-                  {u === 'panela' && 'Panelas, assadeiras e formas. O valor depende da condição da peça.'}
+                  {u === 'prato' && 'Pratos, tigelas e potes.'}
+                  {u === 'copo' && 'Copos, taças e xícaras.'}
+                  {u === 'talher' && 'Garfos, facas, colheres e conchas.'}
+                  {u === 'panela' && 'Panelas, travessas e formas. O valor depende da condição da peça.'}
                 </small>
               </li>
             ))}
@@ -46,7 +46,7 @@ export default function ComoFunciona() {
               <tbody>
                 {cat.itens.map((i) => (
                   <tr key={i.id}>
-                    <td>{i.nome}<small className="nota-item">{i.exemplos}</small></td>
+                    <td>{i.nome}{i.exemplos && <small className="nota-item">{i.exemplos}</small>}</td>
                     <td><small>{i.regra}</small></td>
                     <td>{i.condicao ? 'a partir de ' : ''}{reais(i.centavos)}</td>
                   </tr>
@@ -62,13 +62,13 @@ export default function ComoFunciona() {
             <tbody>
               {ADICIONAIS.map((i) => (
                 <tr key={i.id}>
-                  <td>{i.nome}<small className="nota-item">{i.exemplos}</small></td>
+                  <td>{i.nome}{i.exemplos && <small className="nota-item">{i.exemplos}</small>}</td>
                   <td>a partir de {reais(i.centavos)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <Nota>Geladeira não está incluída: é serviço de diarista, fora do escopo do VizinhoLava.</Nota>
+          <Nota>Fora do escopo: geladeira e qualquer serviço de diarista (faxina, banheiro, roupa). O VizinhoLava faz louça + fogão e micro-ondas.</Nota>
         </Cartao>
 
         <Cartao titulo="Como o valor é fechado" destaque="resumo">
@@ -82,9 +82,7 @@ export default function ComoFunciona() {
             <li>Com o valor combinado, o pagamento (Pix) é feito fora do app.</li>
           </ol>
           <Nota>
-            Lista de itens baseada nos utensílios mais vendidos em {FONTES.map((f, i) => (
-              <span key={f.url}>{i > 0 && (i === FONTES.length - 1 ? ' e ' : ', ')}<a href={f.url} target="_blank" rel="noreferrer">{f.nome.split(' — ')[0]}</a></span>
-            ))} (out/2026). Valores de referência, ajustáveis.
+            Valores de referência, ajustáveis.
           </Nota>
         </Cartao>
 

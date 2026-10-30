@@ -59,9 +59,9 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 ## Entenda como funciona o trabalho (`/como-funciona`, após login)
 
-- Explica os 4 preços base e mostra uma **tabela expandida** (`src/lib/catalogo.ts`) com os utensílios mais vendidos no Brasil (rankings Amazon.com.br, Mercado Livre e Magalu, out/2026), cada um mapeado para uma base: bowls, potes/marmitas, tábuas, pratos de micro-ondas, copos/xícaras/garrafas, talheres e utensílios de silicone, panelas, frigideiras, panela de pressão, travessas/refratários, assadeiras, formas de silicone, copo de liquidificador, cesto de air fryer.
+- Explica os 4 preços base e mostra a **tabela de utensílios** (`src/lib/catalogo.ts`), só com nomes curtos de peças reais de cozinha: prato, tigela, pote com tampa, tábua de corte; copo, taça, xícara/caneca, garrafa; talher, concha/espátula/escumadeira, faca de cozinha, ralador; panela, caçarola (R$ 1,50), fervedor (R$ 1,50), frigideira (R$ 1,50), panela de pressão (R$ 2,00), travessa, assadeira, forma de bolo, copo do liquidificador, cesto da air fryer (R$ 3,00). Churrasco: grelha R$ 8,00.
 - **Churrasco** com preços maiores (espeto, grelha, chapa, tábua, travessa com gordura queimada), também no orçamento.
-- **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Geladeira não entra** (escopo de diarista).
+- **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Fora do escopo:** geladeira e qualquer serviço de diarista.
 - Valores derivados/extras são **de referência** e ajustáveis em `src/lib/catalogo.ts`.
 
 ## Cliente e Prestador (dois logins, estilo Uber/99)
