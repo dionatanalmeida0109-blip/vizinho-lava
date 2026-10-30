@@ -32,6 +32,20 @@ npm run build
 npm run preview
 ```
 
+## Login (nome + senha)
+
+Rotas: `/` (landing), `/login`, `/home` (protegida).
+
+O login usa Supabase Auth com e-mail/senha, mas o usuário digita só **nome** e **senha**. O nome vira um e-mail sintético (veja `src/lib/authName.ts`):
+
+`"João da Silva"` → `joao.da.silva@vizinhollava.local` (minúsculas, sem acentos, espaços viram `.`).
+
+- **Entrar:** `signInWithPassword` com o e-mail sintético.
+- **Criar conta:** `signUp` com o mesmo nome+senha; o nome original fica em `user_metadata.name` e aparece na home.
+- Senha mínima: 6 caracteres.
+- Como os e-mails são fictícios, **desative a confirmação de e-mail** no Supabase (Authentication → Providers → Email → "Confirm email").
+- Sem `.env` configurado, a tela de login mostra um aviso em vez de quebrar.
+
 ## Variáveis de ambiente
 
 | Variável | Descrição |
