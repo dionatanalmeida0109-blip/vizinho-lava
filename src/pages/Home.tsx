@@ -117,6 +117,12 @@ export default function Home() {
     linhas.push('Valor final a confirmar no local. Pagamento combinado antes do serviço.')
     return linhas.join('\n')
   }
+  /** Registra o pedido e encaminha para o prestador da região (link de pedidos → WhatsApp). */
+  function solicitarPrestador() {
+    const texto = textoPedido()
+    setPedido(registrarPedido({ telefone: session!.phone, total, texto }))
+    if (prestador) window.open(linkWhatsApp(prestador.whatsapp, texto), '_blank', 'noopener')
+  }
   function ajustarChurras(id: string, delta: number) {
     setChurras((c) => ({ ...c, [id]: Math.max(0, Math.min(99, (c[id] ?? 0) + delta)) }))
   }
@@ -278,14 +284,19 @@ export default function Home() {
             className="solicitar"
             data-testid="solicitar"
             disabled={servicos === 0}
-            onClick={() => setPedido(registrarPedido({ telefone: session.phone, total, texto: textoPedido() }))}
+            onClick={solicitarPrestador}
           >
-            Confirmar e solicitar serviço
+            {prestador ? `Solicitar prestador (${prestador.nome.split(' ')[0]})` : 'Solicitar prestador'}
           </Botao>
         ) : (
           <div className="pedido-ok" data-testid="pedido-ok" role="status">
             <strong>Pedido {pedido.id} solicitado: {reais(pedido.total)}</strong>
-            <span>Guardamos o pedido neste aparelho. O lavador confirma o valor no local antes de começar.</span>
+            <span>
+              {prestador
+                ? `Encaminhamos o pedido para ${prestador.nome} (${prestador.regiao}) no WhatsApp. Se a conversa não abriu, use o botão abaixo.`
+                : 'Pedido guardado neste aparelho. Abra o link de pedidos do prestador da sua região para encaminhar.'}
+              {' '}O lavador confirma o valor no local antes de começar.
+            </span>
             <Botao variante="texto" onClick={() => setPedido(null)}>Alterar orçamento</Botao>
           </div>
         )}
