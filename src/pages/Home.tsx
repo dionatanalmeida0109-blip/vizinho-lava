@@ -1,17 +1,16 @@
 import { Navigate, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
-import { displayName } from '../lib/authName'
+import { signOut } from '../lib/localAuth'
+import { formatPhone } from '../lib/phone'
 
 export default function Home() {
-  const { session, loading } = useAuth()
+  const session = useAuth()
   const navigate = useNavigate()
 
-  if (loading) return <div className="pagina"><p className="sub">Carregando…</p></div>
   if (!session) return <Navigate to="/login" replace />
 
-  async function sair() {
-    await supabase?.auth.signOut()
+  function sair() {
+    signOut()
     navigate('/login', { replace: true })
   }
 
@@ -21,7 +20,8 @@ export default function Home() {
         <span className="marca">VizinhoLava</span>
       </header>
       <main className="hero">
-        <h1>Olá, {displayName(session)}!</h1>
+        <h1>Olá, {session.name}!</h1>
+        <p className="sub">{formatPhone(session.phone)}</p>
         <p className="sub">Em breve: agendar alguém para lavar a sua louça.</p>
         <button className="secundario" type="button" onClick={sair}>Sair</button>
       </main>

@@ -1,12 +1,12 @@
 /**
  * Proteção simples contra força bruta, 100% local (localStorage).
  *
- * Após MAX_FAILS tentativas de "Entrar" com erro para o mesmo nome
- * (normalizado), novas tentativas ficam bloqueadas por LOCK_MS.
+ * Após MAX_FAILS tentativas de "Entrar" com erro para o mesmo telefone
+ * (id +55...), novas tentativas ficam bloqueadas por LOCK_MS.
  * Sucesso no login zera o contador.
  *
  * Limitação: é só no navegador (limpar o storage burla o bloqueio). Para
- * proteção real no servidor, use os limites de taxa do próprio Supabase Auth.
+ * proteção real seria preciso um servidor.
  */
 export const MAX_FAILS = 5
 export const LOCK_MS = 5 * 60 * 1000
@@ -63,5 +63,5 @@ export function clearFailures(key: string) {
 
 export function lockMessage(ms: number): string {
   const min = Math.ceil(ms / 60000)
-  return `Muitas tentativas sem sucesso. Por segurança, o login para este nome está bloqueado. Tente novamente em ${min} minuto${min > 1 ? 's' : ''}.`
+  return `Muitas tentativas sem sucesso. Por segurança, o login para este telefone está bloqueado. Tente novamente em ${min} minuto${min > 1 ? 's' : ''}.`
 }

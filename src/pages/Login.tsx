@@ -1,23 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { nameToEmail, normalizeName } from '../lib/authName'
 import { useAuth } from '../auth/AuthContext'
+import { requestReset, signIn, signUp } from '../lib/localAuth'
+import { normalizePhone } from '../lib/phone'
 import { clearFailures, lockMessage, lockRemaining, registerFailure } from '../lib/loginLimiter'
-import { SemConfig } from '../components/SemConfig'
 
-function traduzErro(msg: string): string {
-  if (/invalid login credentials/i.test(msg)) return 'Nome ou senha incorretos.'
-  if (/already registered|already exists/i.test(msg)) return 'Esse nome já tem conta. Use "Entrar".'
-  if (/password/i.test(msg)) return 'Senha inválida (mínimo de 6 caracteres).'
-  if (/email not confirmed/i.test(msg)) return 'Conta criada, mas a confirmação de e-mail está ativa no Supabase. Desative-a.'
-  return msg
-}
+type Modo = 'entrar' | 'criar' | 'esqueci'
+
+const titulos: Record<Modo, string> = { entrar: 'Entrar', criar: 'Criar conta', esqueci: 'Trocar senha' }
 
 export default function Login() {
-  const { session } = useAuth()
+  const session = useAuth()
   const navigate = useNavigate()
+  const [modo, setModo] = useState<Modo>('entrar')
   const [nome, setNome] = useState('')
+  const [telefone, setTelefone] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -25,41 +22,51 @@ export default function Login() {
 
   if (session) return <Navigate to="/home" replace />
 
-  // Entrar: signIn. Criar conta: signUp com o mesmo nome+senha (nome vai em user_metadata.name).
-  async function enviar(modo: 'entrar' | 'criar', e?: FormEvent) {
-    e?.preventDefault()
-    if (!supabase) return
+  function trocar(m: Modo) {
+    setModo(m)
     setErro(null)
     setAviso(null)
-    if (!normalizeName(nome)) return setErro('Digite seu nome.')
+    setSenha('')
+  }
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    setAviso(null)
+    const phone = normalizePhone(telefone)
+    if (!phone) return setErro('Telefone inválido. Use um celular com DDD: (41) 99876-5432.')
+    if (modo === 'criar' && !nome.trim()) return setErro('Digite seu nome.')
     if (senha.length < 6) return setErro('A senha precisa ter pelo menos 6 caracteres.')
 
-    const chave = normalizeName(nome)
     if (modo === 'entrar') {
-      const restante = lockRemaining(chave)
+      const restante = lockRemaining(phone)
       if (restante > 0) return setErro(lockMessage(restante))
     }
 
     setEnviando(true)
-    const email = nameToEmail(nome)
-    const { data, error } =
-      modo === 'entrar'
-        ? await supabase.auth.signInWithPassword({ email, password: senha })
-        : await supabase.auth.signUp({ email, password: senha, options: { data: { name: nome.trim() } } })
-    setEnviando(false)
-
-    if (error) {
-      // Só falhas de "Entrar" (senha/nome errados) contam para o bloqueio.
-      if (modo === 'entrar' && /invalid login credentials/i.test(error.message)) {
-        const { lockMs, left } = registerFailure(chave)
-        if (lockMs) return setErro(lockMessage(lockMs))
-        return setErro(`${traduzErro(error.message)} Restam ${left} tentativa${left > 1 ? 's' : ''}.`)
+    try {
+      if (modo === 'entrar') {
+        const r = await signIn(phone, senha)
+        if (!r.ok) {
+          const { lockMs, left } = registerFailure(phone)
+          return setErro(lockMs ? lockMessage(lockMs) : `Telefone ou senha incorretos. Restam ${left} tentativa${left > 1 ? 's' : ''}.`)
+        }
+        clearFailures(phone)
+        navigate('/home', { replace: true })
+      } else if (modo === 'criar') {
+        const r = await signUp(nome, phone, senha)
+        if (!r.ok) return setErro('Esse telefone já tem conta. Use "Entrar".')
+        navigate('/home', { replace: true })
+      } else {
+        const r = await requestReset(phone, senha)
+        if (!r.ok)
+          return setErro(r.reason === 'pending' ? 'Já existe um pedido aguardando aprovação para esse telefone.' : 'Telefone não cadastrado.')
+        setAviso('Pedido enviado. Sua senha atual continua valendo até o pedido ser aprovado.')
+        setSenha('')
       }
-      return setErro(traduzErro(error.message))
+    } finally {
+      setEnviando(false)
     }
-    if (modo === 'entrar') clearFailures(chave)
-    if (data.session) navigate('/home', { replace: true })
-    else setAviso('Conta criada. Confirme o e-mail no Supabase ou desative a confirmação para entrar.')
   }
 
   return (
@@ -68,35 +75,47 @@ export default function Login() {
         <Link to="/" className="marca">VizinhoLava</Link>
       </header>
       <main className="login">
-        <h1>Entrar</h1>
-        {!supabase ? (
-          <SemConfig />
-        ) : (
-          <form className="form" onSubmit={(e) => enviar('entrar', e)}>
+        <h1>{titulos[modo]}</h1>
+        <form className="form" onSubmit={enviar}>
+          {modo === 'criar' && (
             <label>
               Nome
-              <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="username" required />
+              <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" required />
             </label>
-            <label>
-              Senha
-              <input
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            {erro && <p className="erro" role="alert">{erro}</p>}
-            {aviso && <p className="aviso" role="status">{aviso}</p>}
-            <button className="cta" type="submit" disabled={enviando}>
-              {enviando ? 'Aguarde…' : 'Entrar'}
-            </button>
-            <button className="secundario" type="button" disabled={enviando} onClick={() => enviar('criar')}>
-              Criar conta
-            </button>
-          </form>
-        )}
+          )}
+          <label>
+            Celular
+            <input
+              type="tel"
+              inputMode="tel"
+              placeholder="+55 (41) 99876-5432"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              autoComplete="tel"
+              required
+            />
+          </label>
+          <label>
+            {modo === 'esqueci' ? 'Nova senha' : 'Senha'}
+            <input
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
+              required
+            />
+          </label>
+          {erro && <p className="erro" role="alert">{erro}</p>}
+          {aviso && <p className="aviso" role="status">{aviso}</p>}
+          <button className="cta" type="submit" disabled={enviando}>
+            {enviando ? 'Aguarde…' : modo === 'esqueci' ? 'Pedir troca de senha' : titulos[modo]}
+          </button>
+        </form>
+        <nav className="trocas">
+          {modo !== 'entrar' && <button type="button" className="link" onClick={() => trocar('entrar')}>Já tenho conta</button>}
+          {modo !== 'criar' && <button type="button" className="link" onClick={() => trocar('criar')}>Criar conta</button>}
+          {modo !== 'esqueci' && <button type="button" className="link" onClick={() => trocar('esqueci')}>Esqueci a senha</button>}
+        </nav>
       </main>
     </div>
   )

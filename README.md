@@ -15,13 +15,13 @@ VizinhoLava é um app (PWA) para contratar uma pessoa de confiança — um vizin
 
 - [Vite](https://vite.dev/) + [React](https://react.dev/) + TypeScript
 - PWA com [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) (manifest + service worker)
-- [Supabase](https://supabase.com/) (`@supabase/supabase-js`) — apenas o cliente configurado em `src/lib/supabase.ts`; nenhum projeto Supabase foi criado ainda
+- `react-router-dom` para as rotas
+- **Autenticação 100% local** (localStorage + WebCrypto). Sem Supabase nem qualquer serviço externo — decisão do projeto por enquanto.
 
 ## Rodando localmente
 
 ```bash
 npm install
-cp .env.example .env   # preencha com os dados do seu projeto Supabase
 npm run dev
 ```
 
@@ -32,31 +32,23 @@ npm run build
 npm run preview
 ```
 
-## Login (nome + senha)
+Nenhuma variável de ambiente é necessária.
 
-Rotas: `/` (landing), `/login`, `/home` (protegida).
+## Login (celular + senha)
 
-O login usa Supabase Auth com e-mail/senha, mas o usuário digita só **nome** e **senha**. O nome vira um e-mail sintético (veja `src/lib/authName.ts`):
+Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do desenvolvedor).
 
-`"João da Silva"` → `joao.da.silva@vizinhollava.local` (minúsculas, sem acentos, espaços viram `.`).
+- **Identificador fixo = celular brasileiro**: `+55 (DDD) 9XXXX-XXXX`. Aceita `(41) 99876-5432`, `41998765432` ou `+55 41 99876-5432`; tudo vira `+5541998765432` (`src/lib/phone.ts`).
+- **Criar conta:** nome + celular + senha (mín. 6 caracteres). **Entrar:** celular + senha.
+- Senhas guardadas só como hash PBKDF2-SHA256 com salt (`src/lib/password.ts`).
+- Dados no `localStorage` (`src/lib/localAuth.ts`): `users`, `session`, `pending_resets`, `dev_password`.
+- **Força bruta:** 5 tentativas erradas de "Entrar" para o mesmo celular bloqueiam o login dele por 5 minutos (`src/lib/loginLimiter.ts`).
+- **Esqueci a senha:** o usuário informa celular + nova senha; o pedido fica em `pending_resets`. **A senha atual continua valendo até o desenvolvedor aprovar.**
+- **`/dev/resets`:** tela sem link no app, protegida pela senha do desenvolvedor (definida no primeiro acesso naquele navegador). Lista os pedidos com **Aprovar** / **Negar**.
 
-- **Entrar:** `signInWithPassword` com o e-mail sintético.
-- **Criar conta:** `signUp` com o mesmo nome+senha; o nome original fica em `user_metadata.name` e aparece na home.
-- Senha mínima: 6 caracteres.
-- Como os e-mails são fictícios, **desative a confirmação de e-mail** no Supabase (Authentication → Providers → Email → "Confirm email").
-- **Proteção contra força bruta (local):** após 5 tentativas erradas de "Entrar" para o mesmo nome, o login desse nome fica bloqueado por 5 minutos (contador em `localStorage`, veja `src/lib/loginLimiter.ts`). É só no navegador; sem serviços externos.
-- Sem `.env` configurado, a tela de login mostra um aviso em vez de quebrar.
-
-## Variáveis de ambiente
-
-| Variável | Descrição |
-| --- | --- |
-| `VITE_SUPABASE_URL` | URL do projeto Supabase |
-| `VITE_SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
-
-Nunca faça commit do `.env` nem coloque chaves reais no código.
+> Limitação: como não há servidor, cada navegador/aparelho tem seus próprios usuários e pedidos. O bloqueio e a aprovação valem só naquele navegador.
 
 ## Observações
 
 - Os ícones (`public/icon.svg`) são **provisórios** — substituir por ícones definitivos (PNG 192×192 e 512×512).
-- Ainda **não há deploy**.
+- Deploy: Vercel em https://vizinho-lava.vercel.app (upload do `dist`).

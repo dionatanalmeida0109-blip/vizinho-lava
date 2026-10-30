@@ -1,26 +1,22 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { AUTH_EVENT, getSession, type Session } from '../lib/localAuth'
 
-type AuthState = { session: Session | null; loading: boolean }
-
-const AuthContext = createContext<AuthState>({ session: null, loading: true })
+const AuthContext = createContext<Session | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(Boolean(supabase))
+  const [session, setSession] = useState<Session | null>(getSession)
 
   useEffect(() => {
-    if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
-    return () => data.subscription.unsubscribe()
+    const sync = () => setSession(getSession())
+    window.addEventListener(AUTH_EVENT, sync)
+    window.addEventListener('storage', sync) // outras abas
+    return () => {
+      window.removeEventListener(AUTH_EVENT, sync)
+      window.removeEventListener('storage', sync)
+    }
   }, [])
 
-  return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={session}>{children}</AuthContext.Provider>
 }
 
 // oxlint-disable-next-line react/only-export-components
