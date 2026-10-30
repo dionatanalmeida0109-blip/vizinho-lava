@@ -120,3 +120,27 @@ a.cta { display: inline-block; text-decoration: none; }
 .pedido.denied { opacity: 0.6; }
 .acoes { display: flex; gap: 8px; }
 .acoes .cta, .acoes .secundario { padding: 10px 18px; font-size: 0.95rem; }
+
+.orcamento { padding: 24px 0 40px; }
+.orcamento h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.cartao { background: #fff; border: 1px solid #e2f1ee; border-radius: 18px; padding: 20px; margin-top: 16px; }
+.cartao h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.sub-p { color: var(--suave); margin: 0 0 14px; line-height: 1.4; }
+.preview { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: 14px; margin-top: 14px; }
+.aviso-ia { background: var(--nevoa); border-left: 4px solid var(--mar); border-radius: 8px; padding: 10px 12px; margin: 14px 0 0; font-size: 0.9rem; line-height: 1.45; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.tabela th { text-align: left; color: var(--suave); font-weight: 600; font-size: 0.85rem; padding: 6px 4px; border-bottom: 1px solid #e2f1ee; }
+.tabela td { padding: 10px 4px; border-bottom: 1px solid #f0f7f6; vertical-align: middle; }
+.tabela td:last-child, .tabela th:last-child { text-align: right; white-space: nowrap; }
+.nota-item { display: block; color: var(--suave); font-size: 0.78rem; margin-top: 2px; max-width: 150px; }
+.qtd { display: inline-flex; align-items: center; gap: 4px; }
+.qtd button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--mar); background: #fff; color: var(--mar-escuro); font-size: 1.1rem; cursor: pointer; }
+.qtd input { width: 40px; text-align: center; border: 1px solid #cfe6e1; border-radius: 8px; padding: 6px 2px; font: inherit; }
+.check { display: flex; gap: 10px; align-items: flex-start; line-height: 1.4; cursor: pointer; }
+.check input { margin-top: 3px; accent-color: var(--mar); }
+.taxas { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.taxas li { display: flex; justify-content: space-between; gap: 12px; }
+.resumo { background: var(--vidro); border-color: transparent; }
+.linha { display: flex; justify-content: space-between; padding: 4px 0; }
+.linha.total { font-weight: 700; font-size: 1.2rem; border-top: 1px solid rgba(0,0,0,0.1); margin-top: 6px; padding-top: 10px; }
+@media (max-width: 420px) { .tabela th:nth-child(2), .tabela td:nth-child(2) { font-size: 0.8rem; } }
