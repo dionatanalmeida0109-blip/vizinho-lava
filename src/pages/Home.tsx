@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Apoio, Botao, BotaoExterno, Cartao, LinhaValor, Marcar, Nota, Pagina, Quantidade, Tag, Titulo } from '../components/ui'
 import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
 import { estimarLouca } from '../lib/estimativa'
@@ -10,6 +11,8 @@ import {
   CONTAGEM_VAZIA, LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS,
   reais, subtotalLouca, type Contagem, type Produto,
 } from '../lib/precos'
+import { PROMOCAO, aplicarPromocao } from '../lib/promocao'
+import { ROTAS } from '../lib/rotas'
 
 export default function Home() {
   const session = useAuth()
@@ -27,12 +30,12 @@ export default function Home() {
   const [prestador, setPrestador] = useState(prestadorEscolhido)
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
 
-  if (!session) return <Navigate to="/login" replace />
-  if (session.role === 'prestador') return <Navigate to="/prestador" replace />
+  if (!session) return <Navigate to={ROTAS.loginCliente} replace />
+  if (session.role === 'prestador') return <Navigate to={ROTAS.areaPrestador} replace />
 
   function sair() {
     signOut()
-    navigate('/login', { replace: true })
+    navigate(ROTAS.loginCliente, { replace: true })
   }
 
   async function aoEscolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -67,13 +70,19 @@ export default function Home() {
   const totalChurras = CHURRASCO.reduce((t, i) => t + (churras[i.id] ?? 0) * i.centavos, 0)
   const totalExtras = ADICIONAIS.reduce((t, i) => t + (extras[i.id] ? i.centavos : 0), 0)
   const total = subtotal + totalChurras + taxas + totalExtras
+  /** Desconto aplicado só no final; a tabela continua com os preços base. */
+  const promo = aplicarPromocao(total)
   function textoPedido() {
     const linhas = [`Olá! Pedido de lavagem de louça pelo VizinhoLava.`, `Cliente: ${session!.name} (${formatPhone(session!.phone)})`, '']
     UTENSILIOS.filter((u) => contagem[u] > 0).forEach((u) => linhas.push(`${contagem[u]}× ${PRECOS[u].plural}: ${reais(contagem[u] * PRECOS[u].centavos)}`))
     CHURRASCO.filter((i) => (churras[i.id] ?? 0) > 0).forEach((i) => linhas.push(`${churras[i.id]}× ${i.nome}: ${reais(churras[i.id] * i.centavos)}`))
     ADICIONAIS.filter((i) => extras[i.id]).forEach((i) => linhas.push(`${i.nome}: ${reais(i.centavos)}`))
     if (semProdutos && taxas > 0) linhas.push(`Produtos do lavador: ${reais(taxas)}`)
-    linhas.push('', `Total estimado: ${reais(total)}`, 'Valor final a confirmar no local. Pagamento combinado antes do serviço.')
+    linhas.push('')
+    if (promo.ativa)
+      linhas.push(`Total estimado: era ${reais(promo.original)}, agora ${reais(promo.final)} (${PROMOCAO.nome}: ${PROMOCAO.percentual}% de desconto)`)
+    else linhas.push(`Total estimado: ${reais(total)}`)
+    linhas.push('Valor final a confirmar no local. Pagamento combinado antes do serviço.')
     return linhas.join('\n')
   }
   function ajustarChurras(id: string, delta: number) {
@@ -81,168 +90,149 @@ export default function Home() {
   }
 
   return (
-    <div className="pagina">
-      <header className="topo">
-        <span className="marca">VizinhoLava</span>
-        <button className="link" type="button" onClick={sair}>Sair</button>
-      </header>
-      <main className="orcamento">
-        <h1>Olá, {session.name}!</h1>
-        <p className="sub">{formatPhone(session.phone)} · Vamos montar o orçamento da sua louça.</p>
-        <Link className="banner" to="/como-funciona">
-          <strong>Entenda como funciona o trabalho</strong>
-          <span>Preço de cada utensílio, churrasco e serviços à parte →</span>
-        </Link>
+    <Pagina largura="larga" direita={<Botao variante="texto" onClick={sair}>Sair</Botao>}>
+      <Titulo sub={<>{formatPhone(session.phone)} · Vamos montar o orçamento da sua louça.</>}>Olá, {session.name}!</Titulo>
+      <Link className="banner" to={ROTAS.comoFunciona}>
+        <strong>Entenda como funciona o trabalho</strong>
+        <span>Preço de cada utensílio, churrasco e serviços à parte →</span>
+      </Link>
 
-        <section className="cartao">
-          <h2>1. Foto da louça</h2>
-          <p className="sub-p">Tire uma foto da pia ou da louça empilhada. A foto fica só no seu aparelho.</p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={aoEscolherFoto}
-            data-testid="foto"
-          />
-          <button className="cta" type="button" onClick={() => inputRef.current?.click()} disabled={analisando}>
-            📷 {foto ? 'Tirar outra foto' : 'Tirar foto da louça'}
-          </button>
-          {foto && <img className="preview" src={foto} alt="Foto da louça" />}
-          {analisando && <p className="nota">Contando utensílios…</p>}
-          {estimado && !analisando && (
-            <p className="nota">Contagem estimada a partir da foto. Confira e ajuste abaixo.</p>
-          )}
-          <p className="aviso-ia">
-            <strong>Contagem é estimativa local</strong> (feita no seu aparelho, sem enviar a foto) e o
-            lavador confirma no local. Você também pode preencher sem foto.
-          </p>
-        </section>
+      <Cartao titulo="1. Foto da louça">
+        <Apoio>Tire uma foto da pia ou da louça empilhada. A foto fica só no seu aparelho.</Apoio>
+        <input ref={inputRef} type="file" accept="image/*" capture="environment" hidden onChange={aoEscolherFoto} data-testid="foto" />
+        <Botao onClick={() => inputRef.current?.click()} disabled={analisando}>
+          📷 {foto ? 'Tirar outra foto' : 'Tirar foto da louça'}
+        </Botao>
+        {foto && <img className="preview" src={foto} alt="Foto da louça" />}
+        {analisando && <Nota>Contando utensílios…</Nota>}
+        {estimado && !analisando && <Nota>Contagem estimada a partir da foto. Confira e ajuste abaixo.</Nota>}
+        <p className="aviso-ia">
+          <strong>Contagem é estimativa local</strong> (feita no seu aparelho, sem enviar a foto) e o
+          lavador confirma no local. Você também pode preencher sem foto.
+        </p>
+      </Cartao>
 
-        <section className="cartao">
-          <h2>2. Utensílios e tabela de preços</h2>
-          <table className="tabela">
-            <thead>
-              <tr><th>Item</th><th>Preço</th><th>Qtd.</th><th>Subtotal</th></tr>
-            </thead>
-            <tbody>
-              {UTENSILIOS.map((u) => (
-                <tr key={u}>
-                  <td>
-                    {PRECOS[u].plural}
-                    {PRECOS[u].nota && <small className="nota-item">{PRECOS[u].nota}</small>}
-                  </td>
-                  <td>{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</td>
-                  <td>
-                    <div className="qtd">
-                      <button type="button" aria-label={`Menos ${PRECOS[u].nome}`} onClick={() => ajustar(u, -1)}>−</button>
-                      <input
-                        inputMode="numeric"
-                        aria-label={`Quantidade de ${PRECOS[u].plural}`}
-                        value={contagem[u]}
-                        onChange={(e) => definir(u, e.target.value)}
-                      />
-                      <button type="button" aria-label={`Mais ${PRECOS[u].nome}`} onClick={() => ajustar(u, 1)}>+</button>
-                    </div>
-                  </td>
-                  <td>{reais(contagem[u] * PRECOS[u].centavos)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+      <Cartao titulo="2. Utensílios e tabela de preços">
+        <table className="tabela">
+          <thead>
+            <tr><th>Item</th><th>Preço</th><th>Qtd.</th><th>Subtotal</th></tr>
+          </thead>
+          <tbody>
+            {UTENSILIOS.map((u) => (
+              <tr key={u}>
+                <td>
+                  {PRECOS[u].plural}
+                  {PRECOS[u].nota && <small className="nota-item">{PRECOS[u].nota}</small>}
+                </td>
+                <td>{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</td>
+                <td>
+                  <Quantidade
+                    nome={PRECOS[u].nome}
+                    rotulo={PRECOS[u].plural}
+                    valor={contagem[u]}
+                    onMenos={() => ajustar(u, -1)}
+                    onMais={() => ajustar(u, 1)}
+                    onDigitar={(v) => definir(u, v)}
+                  />
+                </td>
+                <td>{reais(contagem[u] * PRECOS[u].centavos)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Cartao>
 
-        <section className="cartao">
-          <h2>3. Churrasco <small className="tag">preços maiores</small></h2>
-          <p className="sub-p">Gordura queimada, espetos e grelhas. Valor conforme a condição.</p>
-          <table className="tabela">
-            <tbody>
-              {CHURRASCO.map((i) => (
-                <tr key={i.id}>
-                  <td>{i.nome}<small className="nota-item">a partir de {reais(i.centavos)}</small></td>
-                  <td>
-                    <div className="qtd">
-                      <button type="button" aria-label={`Menos ${i.nome}`} onClick={() => ajustarChurras(i.id, -1)}>−</button>
-                      <input readOnly aria-label={`Quantidade de ${i.nome}`} value={churras[i.id] ?? 0} />
-                      <button type="button" aria-label={`Mais ${i.nome}`} onClick={() => ajustarChurras(i.id, 1)}>+</button>
-                    </div>
-                  </td>
-                  <td>{reais((churras[i.id] ?? 0) * i.centavos)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+      <Cartao titulo={<>3. Churrasco <Tag>preços maiores</Tag></>}>
+        <Apoio>Gordura queimada, espetos e grelhas. Valor conforme a condição.</Apoio>
+        <table className="tabela">
+          <tbody>
+            {CHURRASCO.map((i) => (
+              <tr key={i.id}>
+                <td>{i.nome}<small className="nota-item">a partir de {reais(i.centavos)}</small></td>
+                <td>
+                  <Quantidade
+                    nome={i.nome}
+                    rotulo={i.nome}
+                    valor={churras[i.id] ?? 0}
+                    onMenos={() => ajustarChurras(i.id, -1)}
+                    onMais={() => ajustarChurras(i.id, 1)}
+                  />
+                </td>
+                <td>{reais((churras[i.id] ?? 0) * i.centavos)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Cartao>
 
-        <section className="cartao">
-          <h2>4. Produtos de limpeza</h2>
-          <label className="check">
-            <input type="checkbox" checked={semProdutos} onChange={(e) => setSemProdutos(e.target.checked)} />
-            Não tenho os produtos adequados — o lavador leva os seus e cobra pela utilização.
-          </label>
-          {semProdutos && (
-            <ul className="taxas">
-              {LISTA_PRODUTOS.map((p) => (
-                <li key={p}>
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      checked={produtos[p]}
-                      onChange={(e) => setProdutos((s) => ({ ...s, [p]: e.target.checked }))}
-                    />
-                    {PRODUTOS[p].nome}
-                  </label>
-                  <span>{reais(PRODUTOS[p].centavos)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="cartao">
-          <h2>Serviços à parte <small className="tag">não é louça</small></h2>
+      <Cartao titulo="4. Produtos de limpeza">
+        <Marcar checked={semProdutos} onChange={setSemProdutos}>
+          Não tenho os produtos adequados — o lavador leva os seus e cobra pela utilização.
+        </Marcar>
+        {semProdutos && (
           <ul className="taxas">
-            {ADICIONAIS.map((i) => (
-              <li key={i.id}>
-                <label className="check">
-                  <input type="checkbox" checked={!!extras[i.id]} onChange={(e) => setExtras((s) => ({ ...s, [i.id]: e.target.checked }))} />
-                  {i.nome}
-                </label>
-                <span>a partir de {reais(i.centavos)}</span>
+            {LISTA_PRODUTOS.map((p) => (
+              <li key={p}>
+                <Marcar checked={produtos[p]} onChange={(v) => setProdutos((s) => ({ ...s, [p]: v }))}>{PRODUTOS[p].nome}</Marcar>
+                <span>{reais(PRODUTOS[p].centavos)}</span>
               </li>
             ))}
           </ul>
-          <p className="nota">Geladeira não está incluída (serviço de diarista).</p>
-        </section>
+        )}
+      </Cartao>
 
-        <section className="cartao resumo" aria-live="polite">
-          <h2>Orçamento base</h2>
-          <div className="linha"><span>Louça</span><span>{reais(subtotal)}</span></div>
-          {totalChurras > 0 && <div className="linha"><span>Churrasco</span><span>{reais(totalChurras)}</span></div>}
-          {totalExtras > 0 && <div className="linha"><span>Serviços à parte</span><span>{reais(totalExtras)}</span></div>}
-          {semProdutos && <div className="linha"><span>Produtos do lavador</span><span>{reais(taxas)}</span></div>}
-          <div className="linha total"><span>Total estimado</span><span data-testid="total">{reais(total)}</span></div>
-          <p className="nota">
-            O lavador confirma o valor no local: a foto não mostra, por exemplo, gordura queimada no
-            fundo da panela, e o valor da panela depende da condição dela.
-          </p>
-          <p className="nota">O pagamento (Pix) é combinado <strong>antes</strong> do serviço, fora do app.</p>
-          {prestador ? (
-            <div className="enviar">
-              <a className="cta" href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
-                Enviar pedido para {prestador.nome.split(' ')[0]} no WhatsApp
-              </a>
-              <small>
-                {prestador.nome} · {prestador.regiao} ·{' '}
-                <button className="link" type="button" onClick={() => { esquecerPrestador(); setPrestador(null) }}>trocar prestador</button>
-              </small>
+      <Cartao titulo={<>Serviços à parte <Tag>não é louça</Tag></>}>
+        <ul className="taxas">
+          {ADICIONAIS.map((i) => (
+            <li key={i.id}>
+              <Marcar checked={!!extras[i.id]} onChange={(v) => setExtras((s) => ({ ...s, [i.id]: v }))}>{i.nome}</Marcar>
+              <span>a partir de {reais(i.centavos)}</span>
+            </li>
+          ))}
+        </ul>
+        <Nota>Geladeira não está incluída (serviço de diarista).</Nota>
+      </Cartao>
+
+      <Cartao titulo="Orçamento base" destaque="resumo" aria-live="polite">
+        <LinhaValor rotulo="Louça">{reais(subtotal)}</LinhaValor>
+        {totalChurras > 0 && <LinhaValor rotulo="Churrasco">{reais(totalChurras)}</LinhaValor>}
+        {totalExtras > 0 && <LinhaValor rotulo="Serviços à parte">{reais(totalExtras)}</LinhaValor>}
+        {semProdutos && <LinhaValor rotulo="Produtos do lavador">{reais(taxas)}</LinhaValor>}
+        {promo.ativa ? (
+          <>
+            <LinhaValor rotulo="Total pela tabela" testId="total-original">{reais(promo.original)}</LinhaValor>
+            <LinhaValor rotulo={`${PROMOCAO.nome} (−${PROMOCAO.percentual}%)`} testId="desconto">− {reais(promo.desconto)}</LinhaValor>
+            <div className="promo" data-testid="promo">
+              <span className="rotulo">{PROMOCAO.nome}</span>
+              <div>
+                era <span className="era">{reais(promo.original)}</span>, agora{' '}
+                <span className="agora" data-testid="total">{reais(promo.final)}</span>
+              </div>
+              <span className="economia">Você economiza {reais(promo.desconto)}</span>
             </div>
-          ) : (
-            <p className="nota">Para encaminhar o pedido, abra o link de pedidos do prestador da sua região.</p>
-          )}
-        </section>
-      </main>
-    </div>
+          </>
+        ) : (
+          <LinhaValor rotulo="Total estimado" total testId="total">{reais(total)}</LinhaValor>
+        )}
+        <Nota>
+          O lavador confirma o valor no local: a foto não mostra, por exemplo, gordura queimada no
+          fundo da panela, e o valor da panela depende da condição dela.
+        </Nota>
+        <Nota>O pagamento (Pix) é combinado <strong>antes</strong> do serviço, fora do app.</Nota>
+        {prestador ? (
+          <div className="enviar">
+            <BotaoExterno href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
+              Enviar pedido para {prestador.nome.split(' ')[0]} no WhatsApp
+            </BotaoExterno>
+            <small>
+              {prestador.nome} · {prestador.regiao} ·{' '}
+              <Botao variante="texto" onClick={() => { esquecerPrestador(); setPrestador(null) }}>trocar prestador</Botao>
+            </small>
+          </div>
+        ) : (
+          <Nota>Para encaminhar o pedido, abra o link de pedidos do prestador da sua região.</Nota>
+        )}
+      </Cartao>
+    </Pagina>
   )
 }

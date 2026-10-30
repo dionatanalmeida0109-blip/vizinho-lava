@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import './styles/index.css'
 import App from './App.tsx'
-import ErroTela from './ErroTela.tsx'
+import ErroTela from './components/ErroTela.tsx'
 
 // PWA: quando uma versão nova do app assume, recarrega uma vez para não
 // continuar mostrando a tela antiga guardada em cache.

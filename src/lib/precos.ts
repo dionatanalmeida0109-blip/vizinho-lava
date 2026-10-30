@@ -1,14 +1,18 @@
-/** Tabela de prefixação embutida (valores em centavos). */
+/**
+ * Tabela de preços base (valores em centavos), abaixo do mercado.
+ * Todo o catálogo (como funciona, churrasco) é calculado a partir destas 4 bases:
+ * mudar um valor aqui atualiza o app inteiro. Promoção fica em ./promocao.ts.
+ */
 export type Utensilio = 'prato' | 'copo' | 'talher' | 'panela'
 
 export const PRECOS: Record<Utensilio, { nome: string; plural: string; centavos: number; nota?: string }> = {
-  prato: { nome: 'Prato', plural: 'Pratos', centavos: 50 },
-  copo: { nome: 'Copo', plural: 'Copos', centavos: 30 },
-  talher: { nome: 'Talher', plural: 'Talheres', centavos: 10 },
+  prato: { nome: 'Prato', plural: 'Pratos', centavos: 40 },
+  copo: { nome: 'Copo', plural: 'Copos', centavos: 25 },
+  talher: { nome: 'Talher', plural: 'Talheres', centavos: 8 },
   panela: {
     nome: 'Panela',
     plural: 'Panelas',
-    centavos: 200,
+    centavos: 150,
     nota: 'Conforme a condição; lavador confirma.',
   },
 }

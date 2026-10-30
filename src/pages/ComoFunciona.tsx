@@ -1,27 +1,23 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Apoio, BotaoLink, Cartao, Nota, Pagina, Titulo } from '../components/ui'
+import { PROMOCAO } from '../lib/promocao'
+import { ROTAS } from '../lib/rotas'
 import { ADICIONAIS, CATEGORIAS, FONTES } from '../lib/catalogo'
 import { PRECOS, UTENSILIOS, reais } from '../lib/precos'
 
 export default function ComoFunciona() {
   const session = useAuth()
-  if (!session) return <Navigate to="/login" replace />
+  if (!session) return <Navigate to={ROTAS.loginCliente} replace />
 
   return (
-    <div className="pagina">
-      <header className="topo">
-        <span className="marca">VizinhoLava</span>
-        <Link className="link-topo" to="/home">Fazer orçamento</Link>
-      </header>
-      <main className="orcamento">
-        <h1>Entenda como funciona o trabalho</h1>
-        <p className="sub">
+    <Pagina largura="larga" direita={<BotaoLink variante="topo" to={ROTAS.orcamento}>Fazer orçamento</BotaoLink>}>
+        <Titulo sub={<>
           Cada utensílio tem um preço. Você tira a foto, o app estima a quantidade e monta um
           orçamento base. O lavador confirma o valor no local, antes de começar.
-        </p>
+        </>}>Entenda como funciona o trabalho</Titulo>
 
-        <section className="cartao">
-          <h2>Os 4 preços base</h2>
+        <Cartao titulo="Os 4 preços base">
           <ul className="bases">
             {UTENSILIOS.map((u) => (
               <li key={u}>
@@ -36,16 +32,15 @@ export default function ComoFunciona() {
               </li>
             ))}
           </ul>
-          <p className="nota">
+          <Nota>
             Os outros itens seguem esses preços base: cada peça é cobrada como a base mais parecida,
             ou como um múltiplo dela quando dá mais trabalho.
-          </p>
-        </section>
+          </Nota>
+        </Cartao>
 
         {CATEGORIAS.map((cat) => (
-          <section key={cat.id} className={`cartao ${cat.id === 'churrasco' ? 'churrasco' : ''}`}>
-            <h2>{cat.titulo}</h2>
-            <p className="sub-p">{cat.descricao}</p>
+          <Cartao key={cat.id} titulo={cat.titulo} destaque={cat.id === 'churrasco' ? 'churrasco' : undefined}>
+            <Apoio>{cat.descricao}</Apoio>
             <table className="tabela catalogo">
               <thead><tr><th>Item</th><th>Como calcula</th><th>Preço</th></tr></thead>
               <tbody>
@@ -58,12 +53,11 @@ export default function ComoFunciona() {
                 ))}
               </tbody>
             </table>
-          </section>
+          </Cartao>
         ))}
 
-        <section className="cartao">
-          <h2>Serviços à parte (não são louça)</h2>
-          <p className="sub-p">Cobrados separadamente, só se você pedir.</p>
+        <Cartao titulo="Serviços à parte (não são louça)">
+          <Apoio>Cobrados separadamente, só se você pedir.</Apoio>
           <table className="tabela catalogo">
             <tbody>
               {ADICIONAIS.map((i) => (
@@ -74,28 +68,27 @@ export default function ComoFunciona() {
               ))}
             </tbody>
           </table>
-          <p className="nota">
-            Geladeira não está incluída: é serviço de diarista, fora do escopo do VizinhoLava.
-          </p>
-        </section>
+          <Nota>Geladeira não está incluída: é serviço de diarista, fora do escopo do VizinhoLava.</Nota>
+        </Cartao>
 
-        <section className="cartao resumo">
-          <h2>Como o valor é fechado</h2>
+        <Cartao titulo="Como o valor é fechado" destaque="resumo">
           <ol className="fluxo">
             <li>Você tira a foto e ajusta as quantidades. Isso gera o orçamento base.</li>
             <li>No local, o lavador confere as peças. A foto não mostra, por exemplo, gordura queimada no fundo da panela.</li>
+            {PROMOCAO.ativa && (
+              <li>No fim do orçamento entra a {PROMOCAO.nome.toLowerCase()}: {PROMOCAO.percentual}% de desconto sobre o total (você vê o "era" e o "agora").</li>
+            )}
             <li>Se você não tiver detergente ou esponja adequados, o lavador leva os dele e cobra pelo uso.</li>
             <li>Com o valor combinado, o pagamento (Pix) é feito fora do app.</li>
           </ol>
-          <p className="nota">
+          <Nota>
             Lista de itens baseada nos utensílios mais vendidos em {FONTES.map((f, i) => (
               <span key={f.url}>{i > 0 && (i === FONTES.length - 1 ? ' e ' : ', ')}<a href={f.url} target="_blank" rel="noreferrer">{f.nome.split(' — ')[0]}</a></span>
             ))} (out/2026). Valores de referência, ajustáveis.
-          </p>
-        </section>
+          </Nota>
+        </Cartao>
 
-        <Link className="cta" to="/home">Fazer meu orçamento</Link>
-      </main>
-    </div>
+        <BotaoLink to={ROTAS.orcamento}>Fazer meu orçamento</BotaoLink>
+    </Pagina>
   )
 }

@@ -1,0 +1,4 @@
+/* Ordem importa: tokens → componentes compartilhados → telas. */
+@import './tokens.css';
+@import './ui.css';
+@import './telas.css';

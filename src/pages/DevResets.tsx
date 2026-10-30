@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { checkDevPassword, decideReset, devPasswordIsSet, listResets, setDevPassword } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
+import { Botao, Campo, Formulario, GrupoBotoes, Mensagem, Pagina, Titulo } from '../components/ui'
 
 /** Tela oculta do desenvolvedor (/dev/resets): aprova ou nega pedidos de troca de senha. Não há link para ela no app. */
 export default function DevResets() {
@@ -31,30 +32,22 @@ export default function DevResets() {
 
   if (!liberado)
     return (
-      <div className="pagina">
-        <main className="login">
-          <h1>Área do desenvolvedor</h1>
-          {primeiroAcesso && <p className="sub">Primeiro acesso neste navegador: defina a senha do desenvolvedor.</p>}
-          <form className="form" onSubmit={entrar}>
-            <label>
-              Senha do desenvolvedor
-              <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="off" required />
-            </label>
-            {erro && <p className="erro" role="alert">{erro}</p>}
-            <button className="cta" type="submit">{primeiroAcesso ? 'Definir e entrar' : 'Entrar'}</button>
-          </form>
-        </main>
-      </div>
+      <Pagina largura="estreita" topo={false}>
+        <Titulo sub={primeiroAcesso ? 'Primeiro acesso neste navegador: defina a senha do desenvolvedor.' : undefined}>Área do desenvolvedor</Titulo>
+        <Formulario onSubmit={entrar}>
+          <Campo rotulo="Senha do desenvolvedor" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="off" required />
+          <Mensagem tipo="erro">{erro}</Mensagem>
+          <Botao type="submit">{primeiroAcesso ? 'Definir e entrar' : 'Entrar'}</Botao>
+        </Formulario>
+      </Pagina>
     )
 
   const fmt = (t: number) => new Date(t).toLocaleString('pt-BR')
   const rotulo = { pending: 'Pendente', approved: 'Aprovado', denied: 'Negado' } as const
 
   return (
-    <div className="pagina">
-      <main>
-        <h1>Pedidos de troca de senha</h1>
-        {pedidos.length === 0 && <p className="sub">Nenhum pedido.</p>}
+    <Pagina largura="livre" topo={false}>
+        <Titulo sub={pedidos.length === 0 ? 'Nenhum pedido.' : undefined}>Pedidos de troca de senha</Titulo>
         <ul className="pedidos">
           {pedidos.map((p) => (
             <li key={p.id} className={`pedido ${p.status}`}>
@@ -67,15 +60,14 @@ export default function DevResets() {
                 </small>
               </div>
               {p.status === 'pending' && (
-                <div className="acoes">
-                  <button className="cta" type="button" onClick={() => decidir(p.id, true)}>Aprovar</button>
-                  <button className="secundario" type="button" onClick={() => decidir(p.id, false)}>Negar</button>
-                </div>
+                <GrupoBotoes>
+                  <Botao onClick={() => decidir(p.id, true)}>Aprovar</Botao>
+                  <Botao variante="secundario" onClick={() => decidir(p.id, false)}>Negar</Botao>
+                </GrupoBotoes>
               )}
             </li>
           ))}
         </ul>
-      </main>
-    </div>
+    </Pagina>
   )
 }

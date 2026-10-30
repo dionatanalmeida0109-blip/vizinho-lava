@@ -1,0 +1,32 @@
+/* Tokens de design: cores, raios e sombras. Telas e componentes só usam estas variáveis. */
+:root {
+  /* marca */
+  --mar: #2a9d8f;          /* verde principal (#2A9D8F) */
+  --mar-escuro: #1f7a6f;   /* hover, textos de destaque */
+  --vidro: #bfe6df;        /* fundos suaves verdes */
+  --nevoa: #f4fbfa;        /* fundo da página */
+  /* texto */
+  --tinta: #16302c;
+  --suave: #5b7772;
+  /* bordas */
+  --borda: #e2f1ee;
+  --borda-leve: #f0f7f6;
+  --borda-campo: #cfe6e1;
+  /* estados */
+  --erro: #b42318;
+  --alerta-fundo: #fff4e5;
+  --alerta-borda: #f5c27a;
+  --alerta-texto: #9a5b00;
+  --churrasco-fundo: #fffaf2;
+  --promo: #c2410c;
+  --promo-fundo: #fff1e6;
+  /* forma */
+  --raio-pilula: 999px;
+  --raio-cartao: 18px;
+  --raio-campo: 12px;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--tinta);
+  background: var(--nevoa);
+  -webkit-font-smoothing: antialiased;
+}

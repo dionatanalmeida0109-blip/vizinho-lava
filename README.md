@@ -51,7 +51,8 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 ## Orçamento (tela pós-login, `/home`)
 
 - Botão **Tirar foto da louça** (`<input type="file" accept="image/*" capture="environment">` abre a câmera traseira no celular). A foto **não sai do aparelho**.
-- Tabela de preços embutida (`src/lib/precos.ts`): prato R$ 0,50 · copo R$ 0,30 · talher R$ 0,10 · panela a partir de R$ 2,00 (conforme a condição).
+- Tabela de preços base embutida (`src/lib/precos.ts`), **abaixo do mercado**: prato R$ 0,40 · copo R$ 0,25 · talher R$ 0,08 · panela a partir de R$ 1,50 (conforme a condição). O catálogo inteiro (`src/lib/catalogo.ts`) é calculado como base × multiplicador, então mudar uma base atualiza tudo.
+- **Promoção no final do orçamento** (`src/lib/promocao.ts`): a tabela fica com os preços base e o desconto (hoje 20%, "Promoção de lançamento") entra só no total — o resumo mostra "era R$ X, agora R$ Y" e quanto o cliente economiza, e a mensagem de WhatsApp leva os dois valores. Para encerrar, `ativa: false`.
 - "IA" de contagem **local** (`src/lib/estimativa.ts`): estimativa grosseira por canvas (densidade de bordas da foto), sem rede e sem API externa. As quantidades vêm preenchidas e o cliente ajusta com − / +. O app avisa que a contagem é estimativa local e que **o lavador confirma o valor no local** (a foto não mostra gordura queimada no fundo da panela).
 - Opção **"Não tenho os produtos adequados"**: o lavador leva os seus e cobra pela utilização — detergente R$ 1,00 e esponja R$ 1,50 (**valores de referência provisórios**, editáveis em `src/lib/precos.ts`).
 - Mostra o orçamento base (louça + produtos). Pagamento via Pix combinado fora do app.
@@ -72,6 +73,39 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 - Cadastros separados (`users` para clientes, `prestadores` para prestadores); o mesmo celular pode ter os dois. Cada tipo só acessa a própria área.
 - O bloqueio de 5 tentativas vale para os dois tipos (chaves separadas). Trocas de senha dos dois tipos aparecem em `/dev/resets` com o rótulo do tipo.
 - Tudo continua **local no navegador**, sem servidor: o encaminhamento é só um link de WhatsApp.
+
+## Padrão de código
+
+Regra geral: **tela em `pages/`, peça visual em `components/ui/`, regra de negócio em `lib/`, cor em `styles/tokens.css`.**
+
+```
+src/
+  pages/            uma tela por rota (Landing, Entrar, Login, Home, ComoFunciona, Prestador, PrestadorLink, DevResets)
+  components/
+    ui/             peças visuais genéricas — importe sempre de '../components/ui'
+      Pagina        casca da tela: cabeçalho (marca + tag + ações) e largura (estreita | larga | livre)
+      Botao         Botao / BotaoLink / BotaoExterno + variante (primario | secundario | texto | topo | topo-destaque), GrupoBotoes
+      Cartao        Cartao (titulo, destaque resumo|churrasco) e LinhaValor
+      Formulario    Formulario, Campo, Marcar (checkbox), Mensagem (erro|ok), Quantidade (− / +)
+      Texto         Titulo (+ sub), Apoio, Nota, Tag, CaixaAviso
+    AcessoConta, EscolhaPapel/SeletorPapel, AvisoCompartilhamento, ErroTela   peças do domínio VizinhoLava
+  lib/              lógica sem React: localAuth, loginLimiter, phone, password, precos, catalogo, promocao, estimativa, linkPrestador, rotas
+  auth/             AuthContext (sessão reativa)
+  styles/
+    tokens.css      variáveis: cores (--mar, --borda, --erro, --alerta-*, --promo…), raios
+    ui.css          classes dos componentes de ui/
+    telas.css       o que é exclusivo de uma tela (agrupado por tela)
+    index.css       importa os três, nesta ordem
+```
+
+Convenções:
+
+- **Rotas**: nunca escreva `'/home'` na mão — use `ROTAS`, `AREA[role]` e `LOGIN[role]` de `src/lib/rotas.ts`.
+- **Botões e cartões**: use os componentes (`<Botao>`, `<BotaoLink>`, `<Cartao>`) em vez de `className="cta"` direto. Nova variante → adicione em `Botao.tsx`.
+- **Cores**: só via `var(--token)`. Cor nova → `tokens.css` primeiro.
+- **Preços**: só em `lib/precos.ts` (bases), `lib/catalogo.ts` (multiplicadores) e `lib/promocao.ts` (desconto final). Telas só exibem.
+- **Textos** em PT-BR; nomes de componentes/funções em português, como no resto do app.
+- Antes de subir: `npm run build` (inclui `tsc`) e `npx oxlint src`.
 
 ## Observações
 
