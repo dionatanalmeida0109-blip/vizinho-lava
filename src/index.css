@@ -175,3 +175,8 @@ a.cta { display: inline-block; text-decoration: none; }
 .enviar .cta { text-align: center; text-decoration: none; }
 .login h1 .tag { font-size: 0.8rem; }
 .form label.check { flex-direction: row; font-weight: 500; }
+.topo-acoes { display: flex; align-items: center; gap: 14px; }
+.botao-topo { background: var(--mar); color: #fff; font-weight: 600; text-decoration: none; padding: 8px 14px; border-radius: 999px; }
+.botao-topo:hover { background: var(--mar-escuro); }
+.acesso { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 20px; }
+.acesso .cta, .acesso .secundario { flex: 1 1 140px; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }

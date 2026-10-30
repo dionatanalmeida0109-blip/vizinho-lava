@@ -42,7 +42,12 @@ export const AUTH_EVENT = 'vizinholava:auth'
 function load<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : fallback
+    if (!raw) return fallback
+    const v: unknown = JSON.parse(raw)
+    // Dado corrompido/antigo no navegador não pode derrubar a tela de entrada.
+    if (fallback !== null && (typeof v !== 'object' || v === null || Array.isArray(v) !== Array.isArray(fallback))) return fallback
+    if (fallback === null && (typeof v !== 'object' || v === null)) return fallback
+    return v as T
   } catch {
     return fallback
   }
@@ -55,10 +60,10 @@ const users = (role: Role) => load<Record<string, User>>(K_USERS[role], {})
 
 export function getSession(): Session | null {
   const s = load<{ phone: string; role?: Role } | null>(K_SESSION, null)
-  if (!s) return null
-  const role = s.role ?? 'cliente'
+  if (!s || typeof s.phone !== 'string') return null
+  const role: Role = s.role === 'prestador' ? 'prestador' : 'cliente'
   const u = users(role)[s.phone]
-  if (!u) return null
+  if (!u || typeof u.name !== 'string') return null
   const perfil = role === 'prestador' ? { regiao: u.regiao ?? '', whatsapp: u.whatsapp ?? u.phone } : undefined
   return { phone: u.phone, name: u.name, role, perfil }
 }

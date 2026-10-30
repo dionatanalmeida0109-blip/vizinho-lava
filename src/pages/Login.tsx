@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { requestReset, signIn, signOut, signUp, type Role } from '../lib/localAuth'
 import { AREA, LOGIN, MENSAGEM_COMPARTILHAMENTO, chaveBloqueio } from '../lib/rotas'
@@ -15,7 +15,8 @@ const nomePapel: Record<Role, string> = { cliente: 'Cliente', prestador: 'Presta
 export default function Login({ papel = 'cliente' }: { papel?: Role }) {
   const session = useAuth()
   const navigate = useNavigate()
-  const [modo, setModo] = useState<Modo>('entrar')
+  const [params] = useSearchParams()
+  const [modo, setModo] = useState<Modo>(params.get('modo') === 'criar' ? 'criar' : 'entrar')
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [senha, setSenha] = useState('')

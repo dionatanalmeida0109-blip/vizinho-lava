@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { AREA } from '../lib/rotas'
 
 const passos = [
   { titulo: 'Você pede', texto: 'Escolhe o dia e o horário em poucos toques.' },
@@ -7,11 +9,19 @@ const passos = [
 ]
 
 export default function Landing() {
+  const session = useAuth()
   return (
     <div className="pagina">
       <header className="topo">
         <span className="marca">VizinhoLava</span>
-        <Link className="link-topo" to="/entrar">Entrar</Link>
+        {session ? (
+          <Link className="link-topo" to={AREA[session.role]}>Minha área</Link>
+        ) : (
+          <nav className="topo-acoes">
+            <Link className="link-topo" to="/entrar">Entrar</Link>
+            <Link className="botao-topo" to="/entrar?modo=criar">Cadastre-se</Link>
+          </nav>
+        )}
       </header>
 
       <main>
@@ -20,6 +30,19 @@ export default function Landing() {
           <p className="sub">
             Simples assim. Você chama, um vizinho de confiança aparece e deixa a pia limpa.
           </p>
+          {session ? (
+            <div className="acesso">
+              <Link className="cta" to={AREA[session.role]}>
+                Continuar como {session.role === 'prestador' ? 'prestador' : 'cliente'}
+              </Link>
+            </div>
+          ) : (
+            <div className="acesso">
+              <Link className="cta" to="/entrar" data-testid="entrar">Entrar</Link>
+              <Link className="secundario" to="/entrar?modo=criar" data-testid="cadastrar">Cadastre-se</Link>
+            </div>
+          )}
+          <p className="sub-p">Ou escolha direto como você quer usar:</p>
           <div className="escolha">
             <Link className="opcao destaque" to="/login">
               <strong>Sou cliente</strong>
