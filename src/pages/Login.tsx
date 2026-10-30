@@ -7,13 +7,14 @@ import { Apoio, Botao, BotaoLink, Campo, Formulario, GrupoBotoes, Marcar, Mensag
 import { requestReset, signIn, signOut, signUp, type Role } from '../lib/localAuth'
 import { RECURSOS } from '../lib/recursos'
 import { AREA, NOME_PAPEL, ROTAS, chaveBloqueio } from '../lib/rotas'
-import { formatPhone, normalizePhone } from '../lib/phone'
+import { formatPhone, mascaraCelular, normalizePhone } from '../lib/phone'
 import { clearFailures, lockMessage, lockRemaining, registerFailure } from '../lib/loginLimiter'
 
 type Modo = 'entrar' | 'criar' | 'esqueci'
 
 const titulos: Record<Modo, string> = { entrar: 'Entrar', criar: 'Criar conta', esqueci: 'Trocar senha' }
-const TELEFONE = { type: 'tel', inputMode: 'tel', placeholder: '+55 (41) 99876-5432' } as const
+/** Só DDD + número, sem +55 (teste só em Curitiba/Brasil). */
+const TELEFONE = { type: 'tel', inputMode: 'numeric', placeholder: '(41) 99876-5432', maxLength: 15 } as const
 
 /** Login, cadastro e troca de senha — a mesma tela para cliente e prestador. */
 export default function Login({ papel = 'cliente' }: { papel?: Role }) {
@@ -65,14 +66,14 @@ export default function Login({ papel = 'cliente' }: { papel?: Role }) {
     setErro(null)
     setAviso(null)
     const phone = normalizePhone(telefone)
-    if (!phone) return setErro('Telefone inválido. Use um celular com DDD: (41) 99876-5432.')
+    if (!phone) return setErro('Celular inválido. Digite DDD + número, sem +55: (41) 99876-5432.')
     if (modo === 'criar' && !nome.trim()) return setErro('Digite seu nome.')
     let whatsapp = phone
     if (modo === 'criar' && prestador) {
       if (!regiao.trim()) return setErro('Informe a região de atendimento (bairro e cidade).')
       if (!mesmoWhats) {
         const w = normalizePhone(whats)
-        if (!w) return setErro('WhatsApp inválido. Use um celular com DDD: (41) 99876-5432.')
+        if (!w) return setErro('WhatsApp inválido. Digite DDD + número, sem +55: (41) 99876-5432.')
         whatsapp = w
       }
       if (!concordo) return setErro('Confirme que entendeu como funciona o compartilhamento de serviço.')
@@ -125,13 +126,13 @@ export default function Login({ papel = 'cliente' }: { papel?: Role }) {
       {cadastroPrestador && <AvisoCompartilhamento />}
       <Formulario onSubmit={enviar}>
         {modo === 'criar' && <Campo rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" required />}
-        <Campo rotulo="Celular" {...TELEFONE} value={telefone} onChange={(e) => setTelefone(e.target.value)} autoComplete="tel" required />
+        <Campo rotulo="Celular" {...TELEFONE} value={telefone} onChange={(e) => setTelefone(mascaraCelular(e.target.value))} autoComplete="tel-national" required />
         {cadastroPrestador && (
           <>
             <Campo rotulo="Região de atendimento" value={regiao} onChange={(e) => setRegiao(e.target.value)} placeholder="Ex.: Água Verde, Curitiba" required />
             <Marcar checked={mesmoWhats} onChange={setMesmoWhats}>Recebo os pedidos no WhatsApp deste mesmo celular</Marcar>
             {!mesmoWhats && (
-              <Campo rotulo="WhatsApp que recebe os pedidos" {...TELEFONE} value={whats} onChange={(e) => setWhats(e.target.value)} required />
+              <Campo rotulo="WhatsApp que recebe os pedidos" {...TELEFONE} value={whats} onChange={(e) => setWhats(mascaraCelular(e.target.value))} required />
             )}
           </>
         )}

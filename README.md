@@ -38,7 +38,7 @@ Nenhuma variável de ambiente é necessária.
 
 Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do desenvolvedor).
 
-- **Identificador fixo = celular brasileiro**: `+55 (DDD) 9XXXX-XXXX`. Aceita `(41) 99876-5432`, `41998765432` ou `+55 41 99876-5432`; tudo vira `+5541998765432` (`src/lib/phone.ts`).
+- **Identificador fixo = celular brasileiro**, digitado **sem +55** (teste só em Curitiba): DDD + número, `(41) 99876-5432` ou `41998765432`, com máscara automática. Por dentro continua `+5541998765432` (contas antigas e link do WhatsApp seguem funcionando) (`src/lib/phone.ts`).
 - **Criar conta:** nome + celular + senha (mín. 6 caracteres). **Entrar:** celular + senha.
 - Senhas guardadas só como hash PBKDF2-SHA256 com salt (`src/lib/password.ts`).
 - Dados no `localStorage` (`src/lib/localAuth.ts`): `users`, `session`, `pending_resets`, `dev_password`.
@@ -69,7 +69,7 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 
 - **Por enquanto a entrada mostra só o caminho do cliente** (flag `RECURSOS.MOSTRAR_PRESTADOR = false` em `src/lib/recursos.ts`): Entrar/Cadastre-se vão para `/login`, `/entrar` redireciona para o login do cliente e o cliente novo vai para **Como funciona** → **orçamento por foto** (`/home`). O prestador continua funcionando pelo endereço direto (`/prestador/login`, `/prestador`, `/p/<código>`). Com a flag em `true`, a página inicial e `/entrar` voltam a mostrar **Sou cliente** / **Sou prestador**.
 - **Cliente** (`/login` → `/home`): celular + senha, orçamento pela foto, catálogo e "Como funciona".
-- **Prestador** (`/prestador/login` → `/prestador`): cadastro com nome, celular (+55), **região de atendimento** e o **WhatsApp que recebe os pedidos**. No cadastro aparece o aviso de compartilhamento de serviço ("o vizinho sai da casa dele para lavar a sua louça e quer receber pelo serviço; o pagamento é combinado antes, não depois") e é preciso marcar "Entendi".
+- **Prestador** (`/prestador/login` → `/prestador`): cadastro com nome, celular (DDD + número), **região de atendimento** e o **WhatsApp que recebe os pedidos**. No cadastro aparece o aviso de compartilhamento de serviço ("o vizinho sai da casa dele para lavar a sua louça e quer receber pelo serviço; o pagamento é combinado antes, não depois") e é preciso marcar "Entendi".
 - A área do prestador mostra o perfil (editável), como os pedidos chegam e um **link de pedidos** (`/p/<código>`). O cliente que abre esse link fica com o prestador escolhido e, no orçamento, tem o botão **Enviar pedido no WhatsApp** (link `wa.me` com os itens e o total).
 - Cadastros separados (`users` para clientes, `prestadores` para prestadores); o mesmo celular pode ter os dois. Cada tipo só acessa a própria área.
 - O bloqueio de 5 tentativas vale para os dois tipos (chaves separadas). Trocas de senha dos dois tipos aparecem em `/dev/resets` com o rótulo do tipo.
