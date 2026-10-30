@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
 import { estimarLouca } from '../lib/estimativa'
+import { ADICIONAIS, CHURRASCO } from '../lib/catalogo'
 import {
   CONTAGEM_VAZIA, LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS,
   reais, subtotalLouca, type Contagem, type Produto,
@@ -18,6 +19,8 @@ export default function Home() {
   const [estimado, setEstimado] = useState(false)
   const [contagem, setContagem] = useState<Contagem>(CONTAGEM_VAZIA)
   const [semProdutos, setSemProdutos] = useState(false)
+  const [churras, setChurras] = useState<Record<string, number>>({})
+  const [extras, setExtras] = useState<Record<string, boolean>>({})
   const [produtos, setProdutos] = useState<Record<Produto, boolean>>({ detergente: true, esponja: true })
 
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
@@ -58,7 +61,12 @@ export default function Home() {
   const taxas = semProdutos
     ? LISTA_PRODUTOS.filter((p) => produtos[p]).reduce((t, p) => t + PRODUTOS[p].centavos, 0)
     : 0
-  const total = subtotal + taxas
+  const totalChurras = CHURRASCO.reduce((t, i) => t + (churras[i.id] ?? 0) * i.centavos, 0)
+  const totalExtras = ADICIONAIS.reduce((t, i) => t + (extras[i.id] ? i.centavos : 0), 0)
+  const total = subtotal + totalChurras + taxas + totalExtras
+  function ajustarChurras(id: string, delta: number) {
+    setChurras((c) => ({ ...c, [id]: Math.max(0, Math.min(99, (c[id] ?? 0) + delta)) }))
+  }
 
   return (
     <div className="pagina">
@@ -69,6 +77,10 @@ export default function Home() {
       <main className="orcamento">
         <h1>Olá, {session.name}!</h1>
         <p className="sub">{formatPhone(session.phone)} · Vamos montar o orçamento da sua louça.</p>
+        <Link className="banner" to="/como-funciona">
+          <strong>Entenda como funciona o trabalho</strong>
+          <span>Preço de cada utensílio, churrasco e serviços à parte →</span>
+        </Link>
 
         <section className="cartao">
           <h2>1. Foto da louça</h2>
@@ -130,7 +142,29 @@ export default function Home() {
         </section>
 
         <section className="cartao">
-          <h2>3. Produtos de limpeza</h2>
+          <h2>3. Churrasco <small className="tag">preços maiores</small></h2>
+          <p className="sub-p">Gordura queimada, espetos e grelhas. Valor conforme a condição.</p>
+          <table className="tabela">
+            <tbody>
+              {CHURRASCO.map((i) => (
+                <tr key={i.id}>
+                  <td>{i.nome}<small className="nota-item">a partir de {reais(i.centavos)}</small></td>
+                  <td>
+                    <div className="qtd">
+                      <button type="button" aria-label={`Menos ${i.nome}`} onClick={() => ajustarChurras(i.id, -1)}>−</button>
+                      <input readOnly aria-label={`Quantidade de ${i.nome}`} value={churras[i.id] ?? 0} />
+                      <button type="button" aria-label={`Mais ${i.nome}`} onClick={() => ajustarChurras(i.id, 1)}>+</button>
+                    </div>
+                  </td>
+                  <td>{reais((churras[i.id] ?? 0) * i.centavos)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="cartao">
+          <h2>4. Produtos de limpeza</h2>
           <label className="check">
             <input type="checkbox" checked={semProdutos} onChange={(e) => setSemProdutos(e.target.checked)} />
             Não tenho os produtos adequados — o lavador leva os seus e cobra pela utilização.
@@ -154,9 +188,27 @@ export default function Home() {
           )}
         </section>
 
+        <section className="cartao">
+          <h2>Serviços à parte <small className="tag">não é louça</small></h2>
+          <ul className="taxas">
+            {ADICIONAIS.map((i) => (
+              <li key={i.id}>
+                <label className="check">
+                  <input type="checkbox" checked={!!extras[i.id]} onChange={(e) => setExtras((s) => ({ ...s, [i.id]: e.target.checked }))} />
+                  {i.nome}
+                </label>
+                <span>a partir de {reais(i.centavos)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="nota">Geladeira não está incluída (serviço de diarista).</p>
+        </section>
+
         <section className="cartao resumo" aria-live="polite">
           <h2>Orçamento base</h2>
           <div className="linha"><span>Louça</span><span>{reais(subtotal)}</span></div>
+          {totalChurras > 0 && <div className="linha"><span>Churrasco</span><span>{reais(totalChurras)}</span></div>}
+          {totalExtras > 0 && <div className="linha"><span>Serviços à parte</span><span>{reais(totalExtras)}</span></div>}
           {semProdutos && <div className="linha"><span>Produtos do lavador</span><span>{reais(taxas)}</span></div>}
           <div className="linha total"><span>Total estimado</span><span data-testid="total">{reais(total)}</span></div>
           <p className="nota">

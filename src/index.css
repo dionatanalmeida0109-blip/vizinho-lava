@@ -144,3 +144,15 @@ a.cta { display: inline-block; text-decoration: none; }
 .linha { display: flex; justify-content: space-between; padding: 4px 0; }
 .linha.total { font-weight: 700; font-size: 1.2rem; border-top: 1px solid rgba(0,0,0,0.1); margin-top: 6px; padding-top: 10px; }
 @media (max-width: 420px) { .tabela th:nth-child(2), .tabela td:nth-child(2) { font-size: 0.8rem; } }
+.banner { display: flex; flex-direction: column; gap: 2px; background: var(--mar); color: #fff; text-decoration: none; border-radius: 16px; padding: 14px 18px; margin-bottom: 4px; }
+.banner span { font-size: 0.9rem; opacity: 0.9; }
+.bases { list-style: none; padding: 0; margin: 0 0 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.bases li { background: var(--nevoa); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.bases .preco { color: var(--mar-escuro); font-weight: 700; font-size: 1.1rem; }
+.bases small { color: var(--suave); line-height: 1.35; }
+.catalogo td:nth-child(2) { color: var(--suave); }
+.catalogo .nota-item { max-width: none; }
+.churrasco { border-color: #f5c27a; background: #fffaf2; }
+.tag { font-size: 0.75rem; font-weight: 600; background: #fff4e5; color: #9a5b00; border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
+.fluxo { margin: 0 0 10px; padding-left: 20px; line-height: 1.5; }
+.orcamento > .cta { display: inline-block; margin-top: 20px; text-decoration: none; }

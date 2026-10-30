@@ -56,6 +56,13 @@ Rotas: `/` (landing), `/login`, `/home` (protegida) e `/dev/resets` (oculta, do 
 - Opção **"Não tenho os produtos adequados"**: o lavador leva os seus e cobra pela utilização — detergente R$ 1,00 e esponja R$ 1,50 (**valores de referência provisórios**, editáveis em `src/lib/precos.ts`).
 - Mostra o orçamento base (louça + produtos). Pagamento via Pix combinado fora do app.
 
+## Entenda como funciona o trabalho (`/como-funciona`, após login)
+
+- Explica os 4 preços base e mostra uma **tabela expandida** (`src/lib/catalogo.ts`) com os utensílios mais vendidos no Brasil (rankings Amazon.com.br, Mercado Livre e Magalu, out/2026), cada um mapeado para uma base: bowls, potes/marmitas, tábuas, pratos de micro-ondas, copos/xícaras/garrafas, talheres e utensílios de silicone, panelas, frigideiras, panela de pressão, travessas/refratários, assadeiras, formas de silicone, copo de liquidificador, cesto de air fryer.
+- **Churrasco** com preços maiores (espeto, grelha, chapa, tábua, travessa com gordura queimada), também no orçamento.
+- **Serviços à parte** (não são louça): limpeza do fogão e do micro-ondas. **Geladeira não entra** (escopo de diarista).
+- Valores derivados/extras são **de referência** e ajustáveis em `src/lib/catalogo.ts`.
+
 ## Observações
 
 - Os ícones (`public/icon.svg`) são **provisórios** — substituir por ícones definitivos (PNG 192×192 e 512×512).
