@@ -1,32 +1,46 @@
-/* Tokens de design: cores, raios e sombras. Telas e componentes só usam estas variáveis. */
+/* Tokens de design: cores, raios, sombras, tipografia e espaço. Telas e componentes só usam estas variáveis. */
 :root {
-  /* marca */
-  --mar: #2a9d8f;          /* verde principal (#2A9D8F) */
-  --mar-escuro: #1f7a6f;   /* hover, textos de destaque */
-  --vidro: #bfe6df;        /* fundos suaves verdes */
-  --nevoa: #f4fbfa;        /* fundo da página */
-  /* texto */
-  --tinta: #16302c;
-  --suave: #5b7772;
+  /* acento único (verde-azulado) */
+  --mar: #0f766e;
+  --mar-escuro: #115e59;
+  --vidro: #e6f4f2;        /* fundo suave do acento */
+  --nevoa: #f7f7f8;        /* fundo da página */
+  --superficie: #ffffff;
+  /* texto (cinzas) */
+  --tinta: #18181b;
+  --suave: #71717a;
   /* bordas */
-  --borda: #e2f1ee;
-  --borda-leve: #f0f7f6;
-  --borda-campo: #cfe6e1;
+  --borda: #e4e4e7;
+  --borda-leve: #f1f1f3;
+  --borda-campo: #d4d4d8;
   /* estados */
   --erro: #b42318;
-  --alerta-fundo: #fff4e5;
-  --alerta-borda: #f5c27a;
-  --alerta-texto: #9a5b00;
-  --churrasco-fundo: #fffaf2;
+  --sucesso-fundo: #ecfdf5;
+  --sucesso-borda: #6ee7b7;
+  --alerta-fundo: #fffbeb;
+  --alerta-borda: #fcd34d;
+  --alerta-texto: #92400e;
+  --churrasco-fundo: #fffdf7;
   --promo: #c2410c;
-  --promo-fundo: #fff1e6;
+  --promo-fundo: #fff7ed;
   /* forma */
   --raio-pilula: 999px;
-  --raio-cartao: 18px;
+  --raio-cartao: 20px;
+  --raio-medio: 14px;
   --raio-campo: 12px;
+  --sombra-1: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 3px rgba(24, 24, 27, 0.06);
+  --sombra-2: 0 4px 12px rgba(24, 24, 27, 0.06), 0 12px 32px rgba(24, 24, 27, 0.06);
+  --foco: 0 0 0 4px rgba(15, 118, 110, 0.18);
+  /* tipografia */
+  --fonte: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --t-xs: 0.78rem; --t-sm: 0.9rem; --t-md: 1rem; --t-lg: 1.15rem; --t-xl: 1.4rem;
+  --espaco: 24px;
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--fonte);
+  font-feature-settings: 'cv11', 'ss01';
   color: var(--tinta);
   background: var(--nevoa);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+h1, h2, h3 { letter-spacing: -0.02em; font-weight: 700; }

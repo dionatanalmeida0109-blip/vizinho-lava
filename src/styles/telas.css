@@ -1,17 +1,17 @@
 /* Estilos específicos de uma tela (o que não é reaproveitável). Agrupe por tela. */
 
 /* Landing */
-.hero { padding: 48px 0 32px; }
-.hero h1 { font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1.1; margin: 0 0 16px; }
+.hero { padding: 56px 0 40px; }
+.hero h1 { font-size: clamp(2.2rem, 7vw, 3.2rem); line-height: 1.05; letter-spacing: -0.035em; margin: 0 0 16px; }
 .passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 16px 0 40px; }
-.passo { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid var(--borda); }
+.passo { background: var(--superficie); border-radius: var(--raio-cartao); padding: var(--espaco); border: 1px solid var(--borda); box-shadow: var(--sombra-1); }
 .passo h3 { margin: 8px 0 4px; font-size: 1rem; }
 .passo p { margin: 0; color: var(--suave); font-size: 0.95rem; line-height: 1.4; }
 .numero { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--vidro); color: var(--mar-escuro); font-weight: 700; font-size: 0.9rem; }
-.condominio { display: flex; gap: 24px; align-items: center; background: var(--vidro); border-radius: 20px; padding: 24px; }
+.condominio { display: flex; gap: 24px; align-items: center; background: var(--superficie); border: 1px solid var(--borda); box-shadow: var(--sombra-1); border-radius: var(--raio-cartao); padding: 24px; }
 .condominio h2 { margin: 0 0 8px; font-size: 1.3rem; }
 .condominio p { margin: 0 0 8px; line-height: 1.5; }
-.qr { flex-shrink: 0; display: grid; grid-template-columns: repeat(5, 14px); gap: 3px; padding: 12px; background: #fff; border-radius: 12px; }
+.qr { flex-shrink: 0; display: grid; grid-template-columns: repeat(5, 14px); gap: 3px; padding: 12px; background: var(--nevoa); border-radius: var(--raio-campo); }
 .qr span { width: 14px; height: 14px; border-radius: 3px; background: var(--borda); }
 .qr span.on { background: var(--tinta); }
 @media (max-width: 480px) { .condominio { flex-direction: column; align-items: flex-start; } }
@@ -20,15 +20,15 @@
 .trocas { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
 
 /* Orçamento (Home) */
-.banner { display: flex; flex-direction: column; gap: 2px; background: var(--mar); color: #fff; text-decoration: none; border-radius: 16px; padding: 14px 18px; margin-bottom: 4px; }
+.banner { display: flex; flex-direction: column; gap: 2px; background: var(--mar); color: #fff; text-decoration: none; border-radius: var(--raio-medio); box-shadow: var(--sombra-2); padding: 14px 18px; margin-bottom: 4px; }
 .banner span { font-size: 0.9rem; opacity: 0.9; }
-.preview { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: 14px; margin-top: 14px; }
-.aviso-ia { background: var(--nevoa); border-left: 4px solid var(--mar); border-radius: 8px; padding: 10px 12px; margin: 14px 0 0; font-size: 0.9rem; line-height: 1.45; }
+.preview { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--raio-medio); border: 1px solid var(--borda); margin-top: 14px; }
+.aviso-ia { background: var(--vidro); border-left: 3px solid var(--mar); border-radius: var(--raio-campo); padding: 12px 14px; margin: 14px 0 0; font-size: 0.9rem; line-height: 1.45; }
 .taxas { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 8px; }
 .taxas li { display: flex; justify-content: space-between; gap: 12px; }
 .enviar { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .enviar .cta { text-align: center; text-decoration: none; }
-.promo { background: var(--promo-fundo); border: 1px dashed var(--promo); border-radius: 14px; padding: 12px 14px; margin-top: 10px; }
+.promo { background: var(--promo-fundo); border: 1px dashed var(--promo); border-radius: var(--raio-medio); padding: 14px 16px; margin-top: 12px; }
 .promo .rotulo { color: var(--promo); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .promo .era { color: var(--suave); text-decoration: line-through; }
 .promo .agora { font-size: 1.5rem; font-weight: 800; color: var(--mar-escuro); }
@@ -46,14 +46,14 @@
 
 /* Dev resets */
 .pedidos { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.pedido { background: #fff; border: 1px solid var(--borda); border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pedido { background: var(--superficie); border: 1px solid var(--borda); box-shadow: var(--sombra-1); border-radius: var(--raio-medio); padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pedido small { color: var(--suave); }
 .pedido.denied { opacity: 0.6; }
 .acoes-foto { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
 .foto-anexada .acoes-foto .cta { flex: 1 1 220px; }
 .ancora-resumo { scroll-margin-top: 12px; }
 .solicitar { width: 100%; margin-top: 14px; }
-.pedido-ok { display: grid; gap: 6px; margin-top: 14px; padding: 14px; border-radius: 14px; background: #e8f6f3; border: 1px solid #2A9D8F; }
+.pedido-ok { display: grid; gap: 6px; margin-top: 14px; padding: 14px; border-radius: var(--raio-medio); background: var(--sucesso-fundo); border: 1px solid var(--sucesso-borda); }
 
 /* Contagem pós-lavagem: seletor de preço (pressão com gordura) e lista de exceções */
 .tabela select { font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--borda-campo); background: inherit; color: inherit; }
