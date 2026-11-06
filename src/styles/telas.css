@@ -58,3 +58,26 @@
 /* Contagem pós-lavagem: seletor de preço (pressão com gordura) e lista de exceções */
 .tabela select { font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--borda-campo); background: inherit; color: inherit; }
 .excecoes { padding-left: 18px; display: grid; gap: 8px; }
+
+/* Volumes (orçamento R$ 20–30) */
+.volumes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.volume { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; background: var(--superficie-alta); border: 1px solid var(--borda); border-radius: var(--raio-medio); padding: 14px; color: var(--tinta); cursor: pointer; text-align: left; font: inherit; }
+.volume span { color: var(--dourado-suave); font-weight: 700; }
+.volume.ativo { border-color: var(--mar); box-shadow: var(--foco); background: var(--vidro); }
+@media (max-width: 480px) { .volumes { grid-template-columns: 1fr; } }
+
+/* Histórico */
+.historico { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 10px; }
+.historico li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; border-radius: var(--raio-medio); background: var(--superficie-alta); border: 1px solid var(--borda); }
+.historico li div { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.historico li small { color: var(--suave); width: 100%; }
+.historico li > span { color: var(--dourado-suave); font-weight: 700; white-space: nowrap; }
+
+/* Ajuste de base do lavador */
+.ajuste-base { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin: 14px 0; }
+.ajuste-base .base-valor { font-size: 1.6rem; font-weight: 800; color: var(--dourado-suave); min-width: 7rem; text-align: center; }
+.ajuste-base .secundario { padding: 10px 14px; font-size: 0.9rem; }
+
+.banner { background: linear-gradient(135deg, rgba(63,154,166,0.85), rgba(47,125,135,0.95)); }
+.promo .agora { color: var(--dourado-suave); }
+.numero { background: var(--vidro); color: var(--dourado-suave); }

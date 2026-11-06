@@ -1,13 +1,21 @@
-import type { Contagem } from './precos'
+import { limitarBase, ORCAMENTO, type Contagem, type VolumeOrcamento } from './precos'
 
 /**
- * "IA" local de contagem: estimativa grosseira feita 100% no aparelho,
- * sem rede e sem API externa. Reduz a foto num canvas, mede quanto da imagem
- * tem bordas/contornos (louça empilhada gera muitas bordas) e converte isso
- * num total aproximado de itens, dividido em proporções típicas de uma pia.
- * O cliente ajusta as quantidades e o lavador confirma no local.
+ * "IA" local de orçamento: 100% no aparelho, sem rede e sem API.
+ * Reduz a foto, mede densidade de bordas (louça empilhada) e área clara,
+ * e sugere um valor BASE dentro de R$ 20–30. O lavador confirma no local
+ * (a foto não mostra gordura queimada no fundo da panela).
  */
-export async function estimarLouca(arquivo: Blob): Promise<Contagem> {
+export type EstimativaOrcamento = {
+  baseCentavos: number
+  volume: VolumeOrcamento
+  rotulo: string
+  /** Contagem grosseira só para o cliente conferir o volume — não fecha o preço. */
+  contagem: Contagem
+  densidade: number
+}
+
+export async function estimarOrcamento(arquivo: Blob): Promise<EstimativaOrcamento> {
   const bitmap = await createImageBitmap(arquivo)
   const L = 96
   const escala = L / Math.max(bitmap.width, bitmap.height)
@@ -38,13 +46,33 @@ export async function estimarLouca(arquivo: Blob): Promise<Contagem> {
     }
   }
   const area = (w - 2) * (h - 2)
-  const densidade = bordas / area // ~0 (foto lisa) a ~0.5 (muito detalhe)
-  const total = Math.min(40, Math.max(4, Math.round(densidade * 80)))
-  const fracClaro = claros / area // muita área clara → mais pratos/copos de louça
+  const densidade = bordas / area
+  const fracClaro = claros / area
 
-  const pratos = Math.max(1, Math.round(total * (0.25 + 0.15 * fracClaro)))
-  const copos = Math.max(1, Math.round(total * 0.2))
-  const panelas = Math.max(1, Math.round(total * 0.08))
-  const talheres = Math.max(0, total - pratos - copos - panelas)
-  return { prato: pratos, copo: copos, talher: talheres, panela: panelas }
+  // Densidade tipicamente 0–0.45 → mapeia para 20–30 reais.
+  const bruto = ORCAMENTO.minCentavos + densidade * (ORCAMENTO.maxCentavos - ORCAMENTO.minCentavos) / 0.35
+  const baseCentavos = limitarBase(bruto)
+
+  let volume: VolumeOrcamento = 'media'
+  if (baseCentavos <= 2200) volume = 'pouca'
+  else if (baseCentavos >= 2800) volume = 'cheia'
+
+  const totalItens = Math.min(40, Math.max(4, Math.round(densidade * 80)))
+  const pratos = Math.max(1, Math.round(totalItens * (0.25 + 0.15 * fracClaro)))
+  const copos = Math.max(1, Math.round(totalItens * 0.2))
+  const panelas = Math.max(1, Math.round(totalItens * 0.08))
+  const talheres = Math.max(0, totalItens - pratos - copos - panelas)
+
+  return {
+    baseCentavos,
+    volume,
+    rotulo: ORCAMENTO.volumes[volume].rotulo,
+    contagem: { prato: pratos, copo: copos, talher: talheres, panela: panelas },
+    densidade,
+  }
+}
+
+/** Compat: ainda devolve só a contagem (para telas antigas). Prefira estimarOrcamento. */
+export async function estimarLouca(arquivo: Blob): Promise<Contagem> {
+  return (await estimarOrcamento(arquivo)).contagem
 }

@@ -1,37 +1,37 @@
-/* Tokens de design: cores, raios, sombras, tipografia e espaço. Telas e componentes só usam estas variáveis. */
+/* Paleta no espírito Órbita (portfólio): céu profundo, dourado, verde-mar. Sem partículas/vórtice. */
 :root {
-  /* acento único (verde-azulado) */
-  --mar: #0f766e;
-  --mar-escuro: #115e59;
-  --vidro: #e6f4f2;        /* fundo suave do acento */
-  --nevoa: #f7f7f8;        /* fundo da página */
-  --superficie: #ffffff;
-  /* texto (cinzas) */
-  --tinta: #18181b;
-  --suave: #71717a;
-  /* bordas */
-  --borda: #e4e4e7;
-  --borda-leve: #f1f1f3;
-  --borda-campo: #d4d4d8;
-  /* estados */
-  --erro: #b42318;
-  --sucesso-fundo: #ecfdf5;
-  --sucesso-borda: #6ee7b7;
-  --alerta-fundo: #fffbeb;
-  --alerta-borda: #fcd34d;
-  --alerta-texto: #92400e;
-  --churrasco-fundo: #fffdf7;
-  --promo: #c2410c;
-  --promo-fundo: #fff7ed;
-  /* forma */
+  --ceu: #07111f;
+  --ceu-alto: #0c1a2e;
+  --mar: #3f9aa6;
+  --mar-escuro: #2f7d87;
+  --mar-brilho: #6fc4cf;
+  --dourado: #e0a43a;
+  --dourado-suave: #f0c36a;
+  --vidro: rgba(63, 154, 166, 0.12);
+  --nevoa: #07111f;
+  --superficie: #0f1c30;
+  --superficie-alta: #15263f;
+  --tinta: #e8eef7;
+  --suave: #9aa8bc;
+  --borda: rgba(232, 238, 247, 0.1);
+  --borda-leve: rgba(232, 238, 247, 0.06);
+  --borda-campo: rgba(232, 238, 247, 0.16);
+  --erro: #f07167;
+  --sucesso-fundo: rgba(63, 154, 166, 0.16);
+  --sucesso-borda: rgba(63, 154, 166, 0.45);
+  --alerta-fundo: rgba(224, 164, 58, 0.12);
+  --alerta-borda: rgba(224, 164, 58, 0.45);
+  --alerta-texto: #f0c36a;
+  --churrasco-fundo: rgba(224, 164, 58, 0.08);
+  --promo: #e0a43a;
+  --promo-fundo: rgba(224, 164, 58, 0.1);
   --raio-pilula: 999px;
   --raio-cartao: 20px;
   --raio-medio: 14px;
   --raio-campo: 12px;
-  --sombra-1: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 3px rgba(24, 24, 27, 0.06);
-  --sombra-2: 0 4px 12px rgba(24, 24, 27, 0.06), 0 12px 32px rgba(24, 24, 27, 0.06);
-  --foco: 0 0 0 4px rgba(15, 118, 110, 0.18);
-  /* tipografia */
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+  --sombra-2: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --foco: 0 0 0 4px rgba(63, 154, 166, 0.28);
   --fonte: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --t-xs: 0.78rem; --t-sm: 0.9rem; --t-md: 1rem; --t-lg: 1.15rem; --t-xl: 1.4rem;
   --espaco: 24px;
@@ -39,8 +39,11 @@
   font-family: var(--fonte);
   font-feature-settings: 'cv11', 'ss01';
   color: var(--tinta);
-  background: var(--nevoa);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(63, 154, 166, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(224, 164, 58, 0.1), transparent 50%),
+    var(--ceu);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { letter-spacing: -0.02em; font-weight: 700; }
+h1, h2, h3 { letter-spacing: -0.02em; font-weight: 700; color: var(--tinta); }

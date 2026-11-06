@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { Apoio, Botao, BotaoExterno, Cartao, LinhaValor, Marcar, Nota, Pagina, Quantidade, Tag, Titulo } from '../components/ui'
+import {
+  Apoio, Botao, BotaoExterno, Cartao, LinhaValor, Marcar, Nota, Pagina, Tag, Titulo,
+} from '../components/ui'
 import { ExplicacaoPreco } from '../components/ExplicacaoPreco'
 import { signOut } from '../lib/localAuth'
 import { formatPhone } from '../lib/phone'
-import { estimarLouca } from '../lib/estimativa'
+import { estimarOrcamento, type EstimativaOrcamento } from '../lib/estimativa'
 import { fotoComoBlob, fotoGuardada, guardarFoto, prepararFoto } from '../lib/foto'
-import { ADICIONAIS, CHURRASCO } from '../lib/catalogo'
 import { esquecerPrestador, linkWhatsApp, prestadorEscolhido } from '../lib/linkPrestador'
 import {
-  CONTAGEM_VAZIA, LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS,
-  reais, subtotalLouca, type Contagem, type Produto,
+  LISTA_PRODUTOS, ORCAMENTO, PRODUTOS,
+  reais, subtotalProdutos, type Produto,
 } from '../lib/precos'
-import { PROMOCAO, aplicarPromocao } from '../lib/promocao'
-import { registrarPedido, type Pedido } from '../lib/pedidos'
+import { listarPedidos, registrarPedido, type Pedido } from '../lib/pedidos'
+import { listarServicos } from '../lib/servicos'
 import { ROTAS } from '../lib/rotas'
 
 export default function Home() {
@@ -27,15 +28,15 @@ export default function Home() {
   const [anexando, setAnexando] = useState(false)
   const [erroFoto, setErroFoto] = useState<string | null>(null)
   const [analisando, setAnalisando] = useState(false)
-  const [estimado, setEstimado] = useState(false)
-  const [contagem, setContagem] = useState<Contagem>(CONTAGEM_VAZIA)
+  const [estimativa, setEstimativa] = useState<EstimativaOrcamento | null>(null)
+  const [baseManual, setBaseManual] = useState<number | null>(null)
   const [semProdutos, setSemProdutos] = useState(false)
-  const [pedido, setPedido] = useState<Pedido | null>(null)
-  const [churras, setChurras] = useState<Record<string, number>>({})
-  const [extras, setExtras] = useState<Record<string, boolean>>({})
   const [produtos, setProdutos] = useState<Record<Produto, boolean>>({ detergente: true, esponja: true })
-
+  const [pedido, setPedido] = useState<Pedido | null>(null)
   const [prestador, setPrestador] = useState(prestadorEscolhido)
+  const [historico, setHistorico] = useState(() => listarPedidos())
+  const [servicos, setServicos] = useState(() => listarServicos())
+
   useEffect(() => { guardarFoto(foto) }, [foto])
 
   if (!session) return <Navigate to={ROTAS.loginCliente} replace />
@@ -47,7 +48,6 @@ export default function Home() {
     navigate(ROTAS.loginCliente, { replace: true })
   }
 
-  /** Só anexa e mostra a foto; a contagem roda quando o cliente toca em "Analisar". */
   async function aoEscolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0]
     if (!arquivo) return
@@ -55,7 +55,9 @@ export default function Home() {
     setErroFoto(null)
     try {
       setFoto(await prepararFoto(arquivo))
-      setEstimado(false)
+      setEstimativa(null)
+      setBaseManual(null)
+      setPedido(null)
     } catch {
       setErroFoto('Não consegui abrir essa foto. Tente outra ou escolha da galeria.')
     } finally {
@@ -69,11 +71,13 @@ export default function Home() {
     setAnalisando(true)
     setErroFoto(null)
     try {
-      setContagem(await estimarLouca(await fotoComoBlob(foto)))
-      setEstimado(true)
+      const est = await estimarOrcamento(await fotoComoBlob(foto))
+      setEstimativa(est)
+      setBaseManual(est.baseCentavos)
+      setPedido(null)
     } catch {
-      setEstimado(false)
-      setErroFoto('Não deu para contar por essa foto. Preencha as quantidades abaixo.')
+      setEstimativa(null)
+      setErroFoto('Não deu para analisar essa foto. Escolha o volume abaixo ou tente outra.')
     } finally {
       setAnalisando(false)
       requestAnimationFrame(() => resumoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
@@ -82,62 +86,73 @@ export default function Home() {
 
   function removerFoto() {
     setFoto(null)
-    setEstimado(false)
+    setEstimativa(null)
+    setBaseManual(null)
     setErroFoto(null)
   }
 
-  function ajustar(u: keyof Contagem, delta: number) {
-    setContagem((c) => ({ ...c, [u]: Math.max(0, Math.min(999, c[u] + delta)) }))
-  }
-  function definir(u: keyof Contagem, valor: string) {
-    const n = Math.max(0, Math.min(999, Math.floor(Number(valor) || 0)))
-    setContagem((c) => ({ ...c, [u]: n }))
+  function escolherVolume(v: keyof typeof ORCAMENTO.volumes) {
+    const centavos = ORCAMENTO.volumes[v].centavos
+    setBaseManual(centavos)
+    setEstimativa((e) => e ? { ...e, baseCentavos: centavos, volume: v, rotulo: ORCAMENTO.volumes[v].rotulo } : {
+      baseCentavos: centavos,
+      volume: v,
+      rotulo: ORCAMENTO.volumes[v].rotulo,
+      contagem: { prato: 0, copo: 0, talher: 0, panela: 0 },
+      densidade: 0,
+    })
+    setPedido(null)
   }
 
-  const subtotal = subtotalLouca(contagem)
-  const taxas = semProdutos
-    ? LISTA_PRODUTOS.filter((p) => produtos[p]).reduce((t, p) => t + PRODUTOS[p].centavos, 0)
-    : 0
-  const totalChurras = CHURRASCO.reduce((t, i) => t + (churras[i.id] ?? 0) * i.centavos, 0)
-  const totalExtras = ADICIONAIS.reduce((t, i) => t + (extras[i.id] ? i.centavos : 0), 0)
-  const servicos = subtotal + totalChurras + taxas + totalExtras
-  /** Desconto aplicado só no final; a tabela continua com os preços base. */
-  const promo = aplicarPromocao(servicos)
-  const totalOriginal = promo.original
-  const total = promo.final
+  const base = baseManual ?? estimativa?.baseCentavos ?? 0
+  const taxas = semProdutos ? subtotalProdutos(produtos) : 0
+  const total = base + taxas
+  const produtosMarcados = semProdutos ? LISTA_PRODUTOS.filter((p) => produtos[p]) : []
+
   function textoPedido() {
-    const linhas = [`Olá! Pedido de lavagem de louça pelo VizinhoLava.`, `Cliente: ${session!.name} (${formatPhone(session!.phone)})`, '']
-    UTENSILIOS.filter((u) => contagem[u] > 0).forEach((u) => linhas.push(`${contagem[u]}× ${PRECOS[u].plural}: ${reais(contagem[u] * PRECOS[u].centavos)}`))
-    CHURRASCO.filter((i) => (churras[i.id] ?? 0) > 0).forEach((i) => linhas.push(`${churras[i.id]}× ${i.nome}: ${reais(churras[i.id] * i.centavos)}`))
-    ADICIONAIS.filter((i) => extras[i.id]).forEach((i) => linhas.push(`${i.nome}: ${reais(i.centavos)}`))
-    if (semProdutos && taxas > 0) linhas.push(`Produtos do lavador: ${reais(taxas)}`)
-    linhas.push('')
-    if (promo.ativa)
-      linhas.push(`Total estimado: era ${reais(totalOriginal)}, agora ${reais(total)} (${PROMOCAO.nome}: ${PROMOCAO.percentual}% de desconto)`)
-    else linhas.push(`Total estimado: ${reais(total)}`)
-    linhas.push('Orçamento estimado pela foto. Valor final: contagem das peças lavadas, pela tabela do app.')
+    const linhas = [
+      'Olá! Pedido de lavagem de louça pelo VizinhoLava.',
+      `Cliente: ${session!.name} (${formatPhone(session!.phone)})`,
+      '',
+      `Sugestão de valor base (IA local): ${reais(base)}${estimativa ? ` · ${estimativa.rotulo}` : ''}`,
+      'Faixa natural: R$ 20 a R$ 30. O lavador confirma no local.',
+    ]
+    if (produtosMarcados.length) {
+      linhas.push(`Produtos do lavador: ${produtosMarcados.map((p) => `${PRODUTOS[p].nome} ${reais(PRODUTOS[p].centavos)}`).join(', ')}`)
+    }
+    linhas.push('', `Total estimado: ${reais(total)}`, 'Pagamento via Pix, combinado antes, fora do app.')
     return linhas.join('\n')
   }
-  /** Registra o pedido e encaminha para o prestador da região (link de pedidos → WhatsApp). */
+
   function solicitarPrestador() {
+    if (base < ORCAMENTO.minCentavos) return
     const texto = textoPedido()
-    setPedido(registrarPedido({ telefone: session!.phone, total, texto }))
+    const novo = registrarPedido({
+      telefone: session!.phone,
+      nomeCliente: session!.name,
+      baseCentavos: base,
+      total,
+      volume: estimativa?.volume,
+      produtos: produtosMarcados,
+      texto,
+    })
+    setPedido(novo)
+    setHistorico(listarPedidos())
     if (prestador) window.open(linkWhatsApp(prestador.whatsapp, texto), '_blank', 'noopener')
-  }
-  function ajustarChurras(id: string, delta: number) {
-    setChurras((c) => ({ ...c, [id]: Math.max(0, Math.min(99, (c[id] ?? 0) + delta)) }))
   }
 
   return (
     <Pagina largura="larga" direita={<Botao variante="texto" onClick={sair}>Sair</Botao>}>
-      <Titulo sub={<>{formatPhone(session.phone)} · Vamos montar o orçamento da sua louça.</>}>Olá, {session.name}!</Titulo>
+      <Titulo sub={<>{formatPhone(session.phone)} · Tire a foto da pia e receba a sugestão de orçamento.</>}>
+        Olá, {session.name}!
+      </Titulo>
       <Link className="banner" to={ROTAS.comoFunciona}>
-        <strong>Entenda como funciona o trabalho</strong>
-        <span>Preço de cada utensílio, churrasco e serviços à parte →</span>
+        <strong>Como funciona o preço</strong>
+        <span>Base R$ 20–30 · IA sugere · lavador confirma →</span>
       </Link>
 
       <Cartao titulo="1. Foto da louça">
-        <Apoio>Encaminhe sua foto para um orçamento estimado. Tire uma foto da pia ou da louça empilhada; a foto fica só no seu aparelho.</Apoio>
+        <Apoio>Encaminhe a foto para um orçamento estimado. A análise roda só no seu aparelho.</Apoio>
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={aoEscolherFoto} data-testid="foto" />
         <input ref={galeriaRef} type="file" accept="image/*" hidden onChange={aoEscolherFoto} data-testid="foto-galeria" />
         <div className="acoes-foto">
@@ -154,172 +169,161 @@ export default function Home() {
             <img className="preview" src={foto} alt="Foto da louça anexada" />
             <div className="acoes-foto">
               <Botao onClick={analisarFoto} disabled={analisando} data-testid="analisar">
-                {analisando ? 'Analisando…' : '✅ Enviar e analisar foto'}
+                {analisando ? 'Analisando…' : '✨ Analisar e sugerir preço'}
               </Botao>
               <Botao variante="texto" onClick={removerFoto} disabled={analisando}>Remover foto</Botao>
             </div>
           </div>
         )}
         {erroFoto && <Nota>{erroFoto}</Nota>}
-        {analisando && <Nota>Contando utensílios…</Nota>}
-        {estimado && !analisando && <Nota>Foto analisada: contagem preenchida abaixo e orçamento atualizado. Confira e ajuste.</Nota>}
+        {analisando && <Nota>Estimando volume e valor base…</Nota>}
         <p className="aviso-ia">
-          <strong>Contagem é estimativa local</strong> (feita no seu aparelho, sem enviar a foto) e o
-          lavador confirma no local. Você também pode preencher sem foto.
+          <strong>Sugestão local</strong> (sem enviar a foto). O lavador confirma no local —
+          a foto não mostra gordura queimada no fundo da panela.
         </p>
       </Cartao>
 
       <ExplicacaoPreco />
 
-      <Cartao titulo="2. Utensílios e tabela de preços">
-        <table className="tabela">
-          <thead>
-            <tr><th>Item</th><th>Preço</th><th>Qtd.</th><th>Subtotal</th></tr>
-          </thead>
-          <tbody>
-            {UTENSILIOS.map((u) => (
-              <tr key={u}>
-                <td>
-                  {PRECOS[u].plural}
-                  {PRECOS[u].nota && <small className="nota-item">{PRECOS[u].nota}</small>}
-                </td>
-                <td>{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</td>
-                <td>
-                  <Quantidade
-                    nome={PRECOS[u].nome}
-                    rotulo={PRECOS[u].plural}
-                    valor={contagem[u]}
-                    onMenos={() => ajustar(u, -1)}
-                    onMais={() => ajustar(u, 1)}
-                    onDigitar={(v) => definir(u, v)}
-                  />
-                </td>
-                <td>{reais(contagem[u] * PRECOS[u].centavos)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Cartao titulo="2. Volume e valor base">
+        <Apoio>Escolha o volume se preferir sem foto, ou ajuste depois da análise.</Apoio>
+        <div className="volumes" role="group" aria-label="Volume da louça">
+          {(Object.keys(ORCAMENTO.volumes) as Array<keyof typeof ORCAMENTO.volumes>).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`volume ${base === ORCAMENTO.volumes[v].centavos ? 'ativo' : ''}`}
+              onClick={() => escolherVolume(v)}
+              data-testid={`volume-${v}`}
+            >
+              <strong>{ORCAMENTO.volumes[v].rotulo}</strong>
+              <span>{reais(ORCAMENTO.volumes[v].centavos)}</span>
+            </button>
+          ))}
+        </div>
+        {estimativa && (
+          <Nota>
+            IA sugeriu <strong>{reais(estimativa.baseCentavos)}</strong> ({estimativa.rotulo}).
+            Você pode trocar o chip acima; o lavador ainda valida no local.
+          </Nota>
+        )}
       </Cartao>
 
-      <Cartao titulo={<>3. Churrasco <Tag>preços maiores</Tag></>}>
-        <Apoio>Gordura queimada, espetos e grelhas. Valor conforme a condição.</Apoio>
-        <table className="tabela">
-          <tbody>
-            {CHURRASCO.map((i) => (
-              <tr key={i.id}>
-                <td>{i.nome}<small className="nota-item">a partir de {reais(i.centavos)}</small></td>
-                <td>
-                  <Quantidade
-                    nome={i.nome}
-                    rotulo={i.nome}
-                    valor={churras[i.id] ?? 0}
-                    onMenos={() => ajustarChurras(i.id, -1)}
-                    onMais={() => ajustarChurras(i.id, 1)}
-                  />
-                </td>
-                <td>{reais((churras[i.id] ?? 0) * i.centavos)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Cartao>
-
-      <Cartao titulo="4. Produtos de limpeza">
-        <Marcar checked={semProdutos} onChange={setSemProdutos}>
+      <Cartao titulo="3. Produtos de limpeza">
+        <Marcar checked={semProdutos} onChange={(v) => { setSemProdutos(v); setPedido(null) }}>
           Não tenho os produtos adequados — o lavador leva os seus e cobra pela utilização.
         </Marcar>
         {semProdutos && (
           <ul className="taxas">
             {LISTA_PRODUTOS.map((p) => (
               <li key={p}>
-                <Marcar checked={produtos[p]} onChange={(v) => setProdutos((s) => ({ ...s, [p]: v }))}>{PRODUTOS[p].nome}</Marcar>
+                <Marcar
+                  checked={produtos[p]}
+                  onChange={(v) => { setProdutos((s) => ({ ...s, [p]: v })); setPedido(null) }}
+                >
+                  {PRODUTOS[p].nome}
+                </Marcar>
                 <span>{reais(PRODUTOS[p].centavos)}</span>
               </li>
             ))}
           </ul>
         )}
         {!semProdutos && (
-          <Nota>Tabela: {LISTA_PRODUTOS.map((p) => `${PRODUTOS[p].nome} ${reais(PRODUTOS[p].centavos)}`).join(' · ')}. Só cobra se o lavador levar.</Nota>
+          <Nota>
+            Tabela: {LISTA_PRODUTOS.map((p) => `${PRODUTOS[p].nome} ${reais(PRODUTOS[p].centavos)}`).join(' · ')}.
+            Só cobra se o lavador levar.
+          </Nota>
         )}
-      </Cartao>
-
-      <Cartao titulo={<>Serviços à parte <Tag>não é louça</Tag></>}>
-        <ul className="taxas">
-          {ADICIONAIS.map((i) => (
-            <li key={i.id}>
-              <Marcar checked={!!extras[i.id]} onChange={(v) => setExtras((s) => ({ ...s, [i.id]: v }))}>{i.nome}</Marcar>
-              <span>a partir de {reais(i.centavos)}</span>
-            </li>
-          ))}
-        </ul>
-        <Nota>Geladeira e serviços de diarista não estão incluídos.</Nota>
       </Cartao>
 
       <div ref={resumoRef} className="ancora-resumo" data-testid="resumo">
-      <Cartao titulo="Orçamento estimado" destaque="resumo" aria-live="polite">
-        <LinhaValor rotulo="Louça">{reais(subtotal)}</LinhaValor>
-        {totalChurras > 0 && <LinhaValor rotulo="Churrasco">{reais(totalChurras)}</LinhaValor>}
-        {totalExtras > 0 && <LinhaValor rotulo="Serviços à parte">{reais(totalExtras)}</LinhaValor>}
-        {semProdutos && <LinhaValor rotulo="Produtos do lavador">{reais(taxas)}</LinhaValor>}
-        {promo.ativa ? (
-          <>
-            <LinhaValor rotulo="Total pela tabela" testId="total-original">{reais(totalOriginal)}</LinhaValor>
-            <LinhaValor rotulo={`${PROMOCAO.nome} (−${PROMOCAO.percentual}%)`} testId="desconto">− {reais(promo.desconto)}</LinhaValor>
-            <div className="promo" data-testid="promo">
-              <span className="rotulo">{PROMOCAO.nome}</span>
-              <div>
-                era <span className="era">{reais(totalOriginal)}</span>, agora{' '}
-                <span className="agora" data-testid="total">{reais(total)}</span>
-              </div>
-              <span className="economia">Você economiza {reais(promo.desconto)}</span>
+        <Cartao titulo="Orçamento estimado" destaque="resumo" aria-live="polite">
+          {base > 0 ? (
+            <>
+              <LinhaValor rotulo={`Valor base${estimativa ? ` · ${estimativa.rotulo}` : ''}`}>
+                {reais(base)}
+              </LinhaValor>
+              {taxas > 0 && <LinhaValor rotulo="Produtos do lavador">{reais(taxas)}</LinhaValor>}
+              <LinhaValor rotulo="Total estimado" total testId="total">{reais(total)}</LinhaValor>
+              <Nota>
+                Sugestão da IA / do volume escolhido. O lavador confirma o valor no local
+                (faixa natural {reais(ORCAMENTO.minCentavos)}–{reais(ORCAMENTO.maxCentavos)}).
+              </Nota>
+              <Nota>Pagamento (Pix) combinado <strong>antes</strong> do serviço, fora do app.</Nota>
+            </>
+          ) : (
+            <Nota>Analise a foto ou escolha um volume para ver o orçamento.</Nota>
+          )}
+
+          {!pedido ? (
+            <Botao
+              className="solicitar"
+              data-testid="solicitar"
+              disabled={base < ORCAMENTO.minCentavos}
+              onClick={solicitarPrestador}
+            >
+              {prestador ? `Solicitar prestador (${prestador.nome.split(' ')[0]})` : 'Solicitar prestador'}
+            </Botao>
+          ) : (
+            <div className="pedido-ok" data-testid="pedido-ok" role="status">
+              <strong>Pedido {pedido.id}: {reais(pedido.total)}</strong>
+              <span>
+                {prestador
+                  ? `Encaminhamos para ${prestador.nome} (${prestador.regiao}) no WhatsApp.`
+                  : 'Pedido guardado neste aparelho. Abra o link do prestador da região para encaminhar.'}
+                {' '}No local, o lavador confirma o valor base e os produtos usados.
+              </span>
+              <Botao variante="texto" onClick={() => setPedido(null)}>Alterar orçamento</Botao>
             </div>
-          </>
-        ) : (
-          <LinhaValor rotulo="Total estimado" total testId="total">{reais(total)}</LinhaValor>
-        )}
-        <Nota>
-          Este é um orçamento estimado. O valor final sai da contagem: depois de lavar, o lavador
-          conta as peças lavadas no app e o app soma pela tabela (a foto não mostra, por exemplo,
-          gordura queimada no fundo da panela).
-        </Nota>
-        <Nota>A forma de pagamento (Pix) é combinada <strong>antes</strong> do serviço, fora do app; o valor é o final da contagem.</Nota>
-        {!pedido ? (
-          <Botao
-            className="solicitar"
-            data-testid="solicitar"
-            disabled={servicos === 0}
-            onClick={solicitarPrestador}
-          >
-            {prestador ? `Solicitar prestador (${prestador.nome.split(' ')[0]})` : 'Solicitar prestador'}
-          </Botao>
-        ) : (
-          <div className="pedido-ok" data-testid="pedido-ok" role="status">
-            <strong>Pedido {pedido.id} solicitado: {reais(pedido.total)}</strong>
-            <span>
-              {prestador
-                ? `Encaminhamos o pedido para ${prestador.nome} (${prestador.regiao}) no WhatsApp. Se a conversa não abriu, use o botão abaixo.`
-                : 'Pedido guardado neste aparelho. Abra o link de pedidos do prestador da sua região para encaminhar.'}
-              {' '}Depois da lavagem, o lavador conta as peças lavadas no app e o valor final sai pela tabela.
-            </span>
-            <Botao variante="texto" onClick={() => setPedido(null)}>Alterar orçamento</Botao>
-          </div>
-        )}
-        {servicos === 0 && !pedido && <Nota>Adicione pelo menos um item para solicitar.</Nota>}
-        {prestador ? (
-          <div className="enviar">
-            <BotaoExterno href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
-              Enviar pedido para {prestador.nome.split(' ')[0]} no WhatsApp
-            </BotaoExterno>
-            <small>
-              {prestador.nome} · {prestador.regiao} ·{' '}
-              <Botao variante="texto" onClick={() => { esquecerPrestador(); setPrestador(null) }}>trocar prestador</Botao>
-            </small>
-          </div>
-        ) : (
-          <Nota>Para encaminhar o pedido, abra o link de pedidos do prestador da sua região.</Nota>
-        )}
-      </Cartao>
+          )}
+
+          {prestador ? (
+            <div className="enviar">
+              <BotaoExterno href={linkWhatsApp(prestador.whatsapp, textoPedido())} target="_blank" rel="noreferrer">
+                Enviar pedido para {prestador.nome.split(' ')[0]} no WhatsApp
+              </BotaoExterno>
+              <small>
+                {prestador.nome} · {prestador.regiao} ·{' '}
+                <Botao variante="texto" onClick={() => { esquecerPrestador(); setPrestador(null) }}>trocar prestador</Botao>
+              </small>
+            </div>
+          ) : (
+            <Nota>Para encaminhar, abra o link de pedidos do prestador da sua região.</Nota>
+          )}
+        </Cartao>
       </div>
+
+      <Cartao titulo="Histórico neste aparelho">
+        {historico.length === 0 && servicos.length === 0 ? (
+          <Nota>Ainda não há pedidos nem serviços fechados neste aparelho.</Nota>
+        ) : (
+          <ul className="historico" data-testid="historico">
+            {historico.slice(0, 8).map((p) => (
+              <li key={p.id}>
+                <div>
+                  <strong>Pedido {p.id}</strong>
+                  <Tag>{p.status}</Tag>
+                  <small>{new Date(p.criadoEm).toLocaleString('pt-BR')}</small>
+                </div>
+                <span>{reais(p.finalCentavos ?? p.total)}</span>
+              </li>
+            ))}
+            {servicos.slice(0, 8).map((s) => (
+              <li key={`s-${s.id}`}>
+                <div>
+                  <strong>Serviço {s.id}</strong>
+                  <Tag>concluído</Tag>
+                  <small>{new Date(s.criadoEm).toLocaleString('pt-BR')}</small>
+                </div>
+                <span>{reais(s.total)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Botao variante="texto" onClick={() => { setHistorico(listarPedidos()); setServicos(listarServicos()) }}>
+          Atualizar histórico
+        </Botao>
+      </Cartao>
     </Pagina>
   )
 }

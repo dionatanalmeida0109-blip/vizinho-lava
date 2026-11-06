@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { AvisoCompartilhamento } from '../components/AvisoCompartilhamento'
-import { Botao, BotaoLink, Campo, Cartao, Formulario, GrupoBotoes, Mensagem, Pagina, Titulo } from '../components/ui'
+import { Botao, BotaoLink, Campo, Cartao, Formulario, GrupoBotoes, Mensagem, Nota, Pagina, Tag, Titulo } from '../components/ui'
 import { signOut, updatePerfilPrestador } from '../lib/localAuth'
 import { codificar } from '../lib/linkPrestador'
 import { formatPhone, normalizePhone } from '../lib/phone'
 import { ROTAS } from '../lib/rotas'
-import { PRECOS, UTENSILIOS, reais } from '../lib/precos'
+import { ORCAMENTO, reais } from '../lib/precos'
+import { listarPedidos } from '../lib/pedidos'
+import { listarServicos } from '../lib/servicos'
 
 /** Área do PRESTADOR (quem vai lavar). */
 export default function Prestador() {
@@ -18,6 +20,8 @@ export default function Prestador() {
   const [whats, setWhats] = useState(session?.perfil ? formatPhone(session.perfil.whatsapp) : '')
   const [erro, setErro] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
+  const [pedidos] = useState(() => listarPedidos())
+  const [servicos] = useState(() => listarServicos())
 
   if (!session) return <Navigate to={ROTAS.loginPrestador} replace />
   if (session.role !== 'prestador') return <Navigate to={ROTAS.orcamento} replace />
@@ -52,7 +56,7 @@ export default function Prestador() {
 
   return (
     <Pagina largura="larga" tag="Prestador" direita={<Botao variante="texto" onClick={sair}>Sair</Botao>}>
-      <Titulo sub="Sua área de prestador.">Olá, {session.name}!</Titulo>
+      <Titulo sub="Sua área de prestador · Água Verde e região.">Olá, {session.name}!</Titulo>
       <AvisoCompartilhamento />
 
       <Cartao titulo="Meu perfil">
@@ -81,11 +85,11 @@ export default function Prestador() {
 
       <Cartao titulo="Como os pedidos chegam até você">
         <ol className="fluxo">
-          <li>Divulgue o seu link (no condomínio, no grupo do prédio, num QR code no elevador).</li>
-          <li>O cliente abre o link, entra como cliente, tira a foto da louça e monta o orçamento.</li>
-          <li>O pedido é encaminhado para o seu WhatsApp ({formatPhone(perfil.whatsapp)}) com os itens e o valor base.</li>
-          <li>O valor do pedido é um <strong>orçamento estimado</strong> (pela foto). Combine a forma de pagamento (Pix) <strong>antes</strong> de ir.</li>
-          <li>Depois de lavar, conte as peças lavadas na tela <strong>Contagem pós-lavagem</strong>: o app soma pela tabela e fecha o valor final.</li>
+          <li>Divulgue o seu link (condomínio, grupo do prédio, QR no elevador).</li>
+          <li>O cliente tira a foto da louça; a IA local sugere um valor base entre {reais(ORCAMENTO.minCentavos)} e {reais(ORCAMENTO.maxCentavos)}.</li>
+          <li>O pedido chega no seu WhatsApp ({formatPhone(perfil.whatsapp)}) com a sugestão.</li>
+          <li>Combine o Pix <strong>antes</strong> de ir. No local, confirme o valor — a foto não mostra gordura queimada.</li>
+          <li>Na tela <strong>Confirmar serviço</strong>, ajuste a base, marque produtos que levou e feche o total.</li>
         </ol>
         <label className="form">
           <span>Seu link de pedidos</span>
@@ -96,21 +100,37 @@ export default function Prestador() {
         </div>
       </Cartao>
 
-      <Cartao titulo="Contagem pós-lavagem" destaque="resumo">
-        <p>Terminou de lavar? Marque quantas peças de cada item foram lavadas e o app calcula o valor final pela tabela.</p>
-        <BotaoLink to={ROTAS.contagemPrestador} data-testid="ir-contagem">Abrir contagem pós-lavagem →</BotaoLink>
+      <Cartao titulo="Confirmar serviço no local" destaque="resumo">
+        <p>Chegou na casa? Confirme o valor base (R$ 20–30), registre produtos usados e feche o total.</p>
+        <BotaoLink to={ROTAS.contagemPrestador} data-testid="ir-contagem">Abrir confirmação no local →</BotaoLink>
       </Cartao>
 
-      <Cartao titulo="Tabela que o cliente vê">
-        <ul className="bases">
-          {UTENSILIOS.map((u) => (
-            <li key={u}>
-              <strong>{PRECOS[u].nome}</strong>
-              <span className="preco">{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</span>
-            </li>
-          ))}
-        </ul>
-        <BotaoLink variante="topo" to={ROTAS.comoFunciona}>Ver a tabela completa (churrasco e serviços à parte) →</BotaoLink>
+      <Cartao titulo="Histórico neste aparelho">
+        {pedidos.length === 0 && servicos.length === 0 ? (
+          <Nota>Ainda não há pedidos nem serviços fechados neste aparelho.</Nota>
+        ) : (
+          <ul className="historico">
+            {pedidos.slice(0, 10).map((p) => (
+              <li key={p.id}>
+                <div>
+                  <strong>Pedido {p.id}</strong> <Tag>{p.status}</Tag>
+                  <small>{p.nomeCliente ?? formatPhone(p.telefone)} · {new Date(p.criadoEm).toLocaleString('pt-BR')}</small>
+                </div>
+                <span>{reais(p.finalCentavos ?? p.total)}</span>
+              </li>
+            ))}
+            {servicos.slice(0, 10).map((s) => (
+              <li key={`s-${s.id}`}>
+                <div>
+                  <strong>Serviço {s.id}</strong> <Tag>concluído</Tag>
+                  <small>{new Date(s.criadoEm).toLocaleString('pt-BR')}</small>
+                </div>
+                <span>{reais(s.total)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <BotaoLink variante="topo" to={ROTAS.comoFunciona}>Ver como o preço funciona →</BotaoLink>
       </Cartao>
     </Pagina>
   )

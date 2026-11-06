@@ -2,109 +2,63 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Apoio, BotaoLink, Cartao, Nota, Pagina, Titulo } from '../components/ui'
 import { ExplicacaoPreco } from '../components/ExplicacaoPreco'
-import { PROMOCAO } from '../lib/promocao'
 import { ROTAS } from '../lib/rotas'
-import { ADICIONAIS, CATEGORIAS } from '../lib/catalogo'
-import { LISTA_PRODUTOS, PRECOS, PRODUTOS, UTENSILIOS, reais } from '../lib/precos'
+import { LISTA_PRODUTOS, ORCAMENTO, PRODUTOS, reais } from '../lib/precos'
 
 export default function ComoFunciona() {
   const session = useAuth()
   if (!session) return <Navigate to={ROTAS.loginCliente} replace />
 
+  const voltar = session.role === 'prestador' ? ROTAS.areaPrestador : ROTAS.orcamento
+
   return (
-    <Pagina largura="larga" direita={<BotaoLink variante="topo" to={ROTAS.orcamento}>Fazer orçamento</BotaoLink>}>
-        <Titulo sub={<>
-          Cada utensílio tem um preço fixo. Você encaminha a foto para um orçamento estimado; depois
-          da lavagem, o lavador conta as peças lavadas no app e o app fecha o valor final pela tabela.
-        </>}>Entenda como funciona o trabalho</Titulo>
+    <Pagina largura="larga" direita={<BotaoLink variante="topo" to={voltar}>Voltar</BotaoLink>}>
+      <Titulo sub={<>
+        Preço natural entre {reais(ORCAMENTO.minCentavos)} e {reais(ORCAMENTO.maxCentavos)}.
+        A IA sugere pela foto; o lavador confirma no local.
+      </>}>Como funciona o trabalho</Titulo>
 
-        <ExplicacaoPreco excecoes />
+      <ExplicacaoPreco />
 
-        <Cartao titulo="Os 4 preços base">
-          <ul className="bases">
-            {UTENSILIOS.map((u) => (
-              <li key={u}>
-                <strong>{PRECOS[u].nome}</strong>
-                <span className="preco">{u === 'panela' ? `a partir de ${reais(PRECOS[u].centavos)}` : reais(PRECOS[u].centavos)}</span>
-                <small>
-                  {u === 'prato' && 'Pratos, tigelas e potes.'}
-                  {u === 'copo' && 'Copos, taças e xícaras.'}
-                  {u === 'talher' && 'Garfos, facas, colheres e conchas.'}
-                  {u === 'panela' && 'Panelas, travessas e formas. O valor depende da condição da peça.'}
-                </small>
-              </li>
+      <Cartao titulo="Os três volumes">
+        <ul className="bases">
+          {(Object.keys(ORCAMENTO.volumes) as Array<keyof typeof ORCAMENTO.volumes>).map((v) => (
+            <li key={v}>
+              <strong>{ORCAMENTO.volumes[v].rotulo}</strong>
+              <span className="preco">{reais(ORCAMENTO.volumes[v].centavos)}</span>
+              <small>Valor base de referência dentro da faixa natural.</small>
+            </li>
+          ))}
+        </ul>
+      </Cartao>
+
+      <Cartao titulo="Produtos de limpeza do lavador">
+        <Apoio>Só se o cliente não tiver os produtos adequados: o lavador leva os dele e cobra pelo uso.</Apoio>
+        <table className="tabela catalogo" data-testid="tabela-produtos">
+          <tbody>
+            {LISTA_PRODUTOS.map((p) => (
+              <tr key={p}>
+                <td>{PRODUTOS[p].nome}</td>
+                <td>{reais(PRODUTOS[p].centavos)}</td>
+              </tr>
             ))}
-          </ul>
-          <Nota>
-            Os outros itens seguem esses preços base: cada peça é cobrada como a base mais parecida,
-            ou como um múltiplo dela quando dá mais trabalho.
-          </Nota>
-        </Cartao>
+          </tbody>
+        </table>
+      </Cartao>
 
-        {CATEGORIAS.map((cat) => (
-          <Cartao key={cat.id} titulo={cat.titulo} destaque={cat.id === 'churrasco' ? 'churrasco' : undefined}>
-            <Apoio>{cat.descricao}</Apoio>
-            <table className="tabela catalogo">
-              <thead><tr><th>Item</th><th>Como calcula</th><th>Preço</th></tr></thead>
-              <tbody>
-                {cat.itens.map((i) => (
-                  <tr key={i.id}>
-                    <td>{i.nome}{i.exemplos && <small className="nota-item">{i.exemplos}</small>}</td>
-                    <td><small>{i.regra}</small></td>
-                    <td>{i.condicao ? 'a partir de ' : ''}{reais(i.centavos)}{i.ate ? ` a ${reais(i.ate)}` : ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Cartao>
-        ))}
+      <Cartao titulo="Passo a passo" destaque="resumo">
+        <ol className="fluxo">
+          <li>O cliente tira a foto da pia. A análise roda <strong>só no aparelho</strong> (sem API paga).</li>
+          <li>A IA sugere um <strong>valor base</strong> entre {reais(ORCAMENTO.minCentavos)} e {reais(ORCAMENTO.maxCentavos)}.</li>
+          <li>Se faltar detergente/esponja, o cliente marca e o acréscimo entra no estimado.</li>
+          <li>O pedido vai ao lavador (WhatsApp). No local, ele <strong>confirma ou ajusta</strong> o valor — a foto não mostra gordura queimada.</li>
+          <li>O lavador registra os produtos que levou e fecha o total.</li>
+          <li>O Pix é combinado <strong>antes</strong>, fora do app.</li>
+        </ol>
+        <Nota>Fora do escopo por enquanto: faxina completa, geladeira e serviços de diarista.</Nota>
+      </Cartao>
 
-        <Cartao titulo="Serviços à parte (não são louça)">
-          <Apoio>Cobrados separadamente, só se você pedir.</Apoio>
-          <table className="tabela catalogo">
-            <tbody>
-              {ADICIONAIS.map((i) => (
-                <tr key={i.id}>
-                  <td>{i.nome}{i.exemplos && <small className="nota-item">{i.exemplos}</small>}</td>
-                  <td>a partir de {reais(i.centavos)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Nota>Fora do escopo: geladeira e qualquer serviço de diarista (faxina, banheiro, roupa). O VizinhoLava faz louça + fogão e micro-ondas.</Nota>
-        </Cartao>
-
-        <Cartao titulo="Produtos de limpeza do lavador">
-          <Apoio>Só se você não tiver os produtos adequados: o lavador leva os dele e cobra pelo uso.</Apoio>
-          <table className="tabela catalogo" data-testid="tabela-produtos">
-            <tbody>
-              {LISTA_PRODUTOS.map((p) => (
-                <tr key={p}>
-                  <td>{PRODUTOS[p].nome}</td>
-                  <td>{reais(PRODUTOS[p].centavos)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Cartao>
-
-        <Cartao titulo="Como o valor é fechado" destaque="resumo">
-          <ol className="fluxo">
-            <li>Você encaminha a foto e ajusta as quantidades. Isso gera o <strong>orçamento estimado</strong>.</li>
-            <li>O lavador lava a louça e, no local, conta as peças lavadas e marca no app. A foto não mostra, por exemplo, gordura queimada no fundo da panela.</li>
-            <li>O app soma a contagem pela tabela e fecha o <strong>valor final</strong>.</li>
-            {PROMOCAO.ativa && (
-              <li>No fim do orçamento entra a {PROMOCAO.nome.toLowerCase()}: {PROMOCAO.percentual}% de desconto sobre o total (você vê o "era" e o "agora").</li>
-            )}
-            <li>Se você não tiver detergente ou esponja adequados, o lavador leva os dele e cobra pelo uso.</li>
-            <li>Com o valor combinado, o pagamento (Pix) é feito fora do app.</li>
-          </ol>
-          <Nota>
-            Valores de referência, ajustáveis.
-          </Nota>
-        </Cartao>
-
-        <BotaoLink to={ROTAS.orcamento}>Fazer meu orçamento</BotaoLink>
+      <BotaoLink to={voltar}>{session.role === 'prestador' ? 'Voltar à minha área' : 'Fazer meu orçamento'}</BotaoLink>
     </Pagina>
   )
 }

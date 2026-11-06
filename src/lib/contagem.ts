@@ -1,63 +1,65 @@
 /**
- * Contagem pós-lavagem (prestador): o valor REAL do serviço.
- * O orçamento pela foto é só estimado; depois de lavar, o prestador marca
- * quantas peças de cada item foram lavadas e o app soma pela tabela fixa
- * (./catalogo.ts e ./precos.ts). Fica guardado só neste aparelho.
+ * Confirmação do lavador no local: ajusta o valor BASE (R$ 20–30) e marca
+ * produtos que levou. O preço natural do serviço é a faixa base + produtos.
  */
-import { ITENS_CONTAGEM, type ItemCatalogo } from './catalogo'
-import { LISTA_PRODUTOS, PRODUTOS, type Produto } from './precos'
-import { aplicarPromocao, type ResultadoPromo } from './promocao'
+import { LISTA_PRODUTOS, PRODUTOS, limitarBase, type Produto } from './precos'
+import { salvarServico, listarServicos, type Servico } from './servicos'
+import { atualizarPedido } from './pedidos'
 
-export const TODOS_ITENS: ItemCatalogo[] = ITENS_CONTAGEM.flatMap((g) => g.itens)
-
-/** Quantidade lavada por item (id do catálogo). */
-export type Quantidades = Record<string, number>
-/** Preço unitário escolhido para itens com faixa (ex.: pressão com gordura). */
-export type PrecosEscolhidos = Record<string, number>
-
-/** Opções de preço de um item com faixa (de R$ 0,50 em R$ 0,50). */
-export function opcoesPreco(i: ItemCatalogo): number[] {
-  if (!i.ate) return [i.centavos]
-  const op: number[] = []
-  for (let c = i.centavos; c <= i.ate; c += 50) op.push(c)
-  return op
-}
-
-export function precoUnitario(i: ItemCatalogo, escolhidos: PrecosEscolhidos): number {
-  const p = escolhidos[i.id]
-  return p && opcoesPreco(i).includes(p) ? p : i.centavos
-}
-
-export type Fechamento = {
-  linhas: { id: string; nome: string; qtd: number; unitario: number; subtotal: number }[]
+export type FechamentoBase = {
+  baseCentavos: number
   produtos: { id: Produto; nome: string; centavos: number }[]
-  pecas: number
-  promo: ResultadoPromo
+  total: number
 }
 
-export function fechar(q: Quantidades, escolhidos: PrecosEscolhidos, usados: Record<Produto, boolean>): Fechamento {
-  const linhas = TODOS_ITENS.filter((i) => (q[i.id] ?? 0) > 0).map((i) => {
-    const unitario = precoUnitario(i, escolhidos)
-    return { id: i.id, nome: i.nome, qtd: q[i.id], unitario, subtotal: q[i.id] * unitario }
+export function fecharBase(
+  baseCentavos: number,
+  usados: Partial<Record<Produto, boolean>>,
+): FechamentoBase {
+  const base = limitarBase(baseCentavos)
+  const produtos = LISTA_PRODUTOS.filter((p) => usados[p]).map((p) => ({
+    id: p,
+    nome: PRODUTOS[p].nome,
+    centavos: PRODUTOS[p].centavos,
+  }))
+  const total = base + produtos.reduce((t, p) => t + p.centavos, 0)
+  return { baseCentavos: base, produtos, total }
+}
+
+export type ContagemSalva = Servico
+export const listarContagens = listarServicos
+
+export function salvarContagem(args: {
+  pedido?: string
+  cliente?: string
+  clienteNome?: string
+  lavadorNome?: string
+  baseSugerida: number
+  baseConfirmada: number
+  produtos: Produto[]
+  total: number
+  notas?: string
+  texto: string
+}): Servico {
+  const servico = salvarServico({
+    pedidoId: args.pedido,
+    clienteTelefone: args.cliente,
+    clienteNome: args.clienteNome,
+    lavadorNome: args.lavadorNome,
+    baseSugerida: args.baseSugerida,
+    baseConfirmada: args.baseConfirmada,
+    produtos: args.produtos,
+    total: args.total,
+    notas: args.notas,
+    texto: args.texto,
   })
-  const produtos = LISTA_PRODUTOS.filter((p) => usados[p]).map((p) => ({ id: p, nome: PRODUTOS[p].nome, centavos: PRODUTOS[p].centavos }))
-  const bruto = linhas.reduce((t, l) => t + l.subtotal, 0) + produtos.reduce((t, p) => t + p.centavos, 0)
-  return { linhas, produtos, pecas: linhas.reduce((t, l) => t + l.qtd, 0), promo: aplicarPromocao(bruto) }
-}
-
-export type ContagemSalva = { id: string; criadoEm: string; pedido?: string; cliente?: string; total: number; texto: string }
-const CHAVE = 'vizinholava:contagens'
-
-export function listarContagens(): ContagemSalva[] {
-  try {
-    return JSON.parse(localStorage.getItem(CHAVE) ?? '[]') as ContagemSalva[]
-  } catch {
-    return []
+  if (args.pedido) {
+    atualizarPedido(args.pedido, {
+      status: 'concluido',
+      finalCentavos: args.total,
+      confirmadoEm: servico.criadoEm,
+      notasLavador: args.notas,
+    })
   }
-}
-
-export function salvarContagem(c: Omit<ContagemSalva, 'id' | 'criadoEm'>): ContagemSalva {
-  const nova: ContagemSalva = { ...c, id: Math.random().toString(36).slice(2, 8).toUpperCase(), criadoEm: new Date().toISOString() }
-  localStorage.setItem(CHAVE, JSON.stringify([nova, ...listarContagens()].slice(0, 50)))
-  return nova
+  return servico
 }

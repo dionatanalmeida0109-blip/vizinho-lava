@@ -6,9 +6,9 @@ import { RECURSOS } from '../lib/recursos'
 import { AREA, ROTAS } from '../lib/rotas'
 
 const passos = [
-  { titulo: 'Você pede', texto: 'Escolhe o dia e o horário em poucos toques.' },
-  { titulo: 'O vizinho vem', texto: 'Uma pessoa de confiança vai até a sua casa.' },
-  { titulo: 'Louça limpa', texto: 'Pia vazia, cozinha em ordem. Só isso.' },
+  { titulo: 'Foto e orçamento', texto: 'Tire a foto da pia. A IA local sugere um valor entre R$ 20 e R$ 30.' },
+  { titulo: 'O vizinho confirma', texto: 'No local, o lavador valida o preço — a foto não mostra gordura queimada.' },
+  { titulo: 'Louça limpa', texto: 'Pia vazia. Pix combinado antes, fora do app. Só isso.' },
 ]
 
 export default function Landing() {

@@ -1,122 +1,177 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { Apoio, Botao, BotaoExterno, BotaoLink, Campo, Cartao, LinhaValor, Marcar, Nota, Pagina, Quantidade, Titulo } from '../components/ui'
-import { ITENS_CONTAGEM } from '../lib/catalogo'
 import {
-  fechar, opcoesPreco, precoUnitario, salvarContagem,
-  type ContagemSalva, type PrecosEscolhidos, type Quantidades,
-} from '../lib/contagem'
+  Apoio, Botao, BotaoExterno, BotaoLink, Campo, Cartao, LinhaValor, Marcar, Nota, Pagina, Titulo,
+} from '../components/ui'
+import { fecharBase, salvarContagem, type ContagemSalva } from '../lib/contagem'
 import { linkWhatsApp } from '../lib/linkPrestador'
 import { formatPhone, normalizePhone } from '../lib/phone'
-import { LISTA_PRODUTOS, PRODUTOS, reais, type Produto } from '../lib/precos'
-import { PROMOCAO } from '../lib/promocao'
+import {
+  LISTA_PRODUTOS, ORCAMENTO, PRODUTOS, limitarBase, reais, type Produto,
+} from '../lib/precos'
+import { listarPedidos, pedidoPorId } from '../lib/pedidos'
 import { ROTAS } from '../lib/rotas'
 
 /**
- * Tela do PRESTADOR depois da lavagem: marca as peças lavadas e o app soma
- * pela tabela fixa → valor final. (A foto do cliente gera só o orçamento estimado.)
+ * Confirmação do lavador no local: valida/ajusta o valor base (R$ 20–30)
+ * e registra produtos que levou. Substitui a contagem peça a peça como preço final.
  */
 export default function ContagemPrestador() {
   const session = useAuth()
-  const [qtd, setQtd] = useState<Quantidades>({})
-  const [precos, setPrecos] = useState<PrecosEscolhidos>({})
+  const pedidosAbertos = useMemo(() => listarPedidos().filter((p) => p.status === 'solicitado' || p.status === 'confirmado'), [])
+  const [codigo, setCodigo] = useState('')
+  const [base, setBase] = useState<number>(ORCAMENTO.volumes.media.centavos)
+  const [sugerida, setSugerida] = useState<number>(ORCAMENTO.volumes.media.centavos)
   const [usados, setUsados] = useState<Record<Produto, boolean>>({ esponja: false, detergente: false })
-  const [pedido, setPedido] = useState('')
   const [cliente, setCliente] = useState('')
+  const [notas, setNotas] = useState('')
   const [salvo, setSalvo] = useState<ContagemSalva | null>(null)
 
   if (!session) return <Navigate to={ROTAS.loginPrestador} replace />
   if (session.role !== 'prestador') return <Navigate to={ROTAS.orcamento} replace />
 
-  const f = fechar(qtd, precos, usados)
-  const total = f.promo.final
-  const whatsCliente = normalizePhone(cliente)
+  const f = fecharBase(base, usados)
 
-  function ajustar(id: string, delta: number) {
+  function carregarPedido(id: string) {
+    const p = pedidoPorId(id)
+    if (!p) return
+    setCodigo(p.id)
+    setBase(limitarBase(p.baseCentavos))
+    setSugerida(limitarBase(p.baseCentavos))
+    setCliente(p.telefone ? formatPhone(p.telefone) : '')
+    const marcados: Record<Produto, boolean> = { esponja: false, detergente: false }
+    for (const prod of p.produtos ?? []) marcados[prod] = true
+    setUsados(marcados)
     setSalvo(null)
-    setQtd((q) => ({ ...q, [id]: Math.max(0, Math.min(999, (q[id] ?? 0) + delta)) }))
   }
-  function definir(id: string, v: string) {
+
+  function ajustarBase(delta: number) {
     setSalvo(null)
-    setQtd((q) => ({ ...q, [id]: Math.max(0, Math.min(999, Math.floor(Number(v) || 0))) }))
+    setBase((b) => limitarBase(b + delta))
   }
 
   function texto() {
-    const l = [`VizinhoLava: valor final da lavagem${pedido.trim() ? ` (pedido ${pedido.trim().toUpperCase()})` : ''}.`, `Lavador: ${session!.name}`, '']
-    f.linhas.forEach((x) => l.push(`${x.qtd}× ${x.nome} (${reais(x.unitario)}): ${reais(x.subtotal)}`))
+    const whatsCliente = normalizePhone(cliente)
+    const l = [
+      `VizinhoLava: valor confirmado no local${codigo.trim() ? ` (pedido ${codigo.trim().toUpperCase()})` : ''}.`,
+      `Lavador: ${session!.name}`,
+      '',
+      `Sugestão (foto/IA): ${reais(sugerida)}`,
+      `Valor base confirmado: ${reais(f.baseCentavos)}`,
+    ]
     f.produtos.forEach((p) => l.push(`${p.nome}: ${reais(p.centavos)}`))
-    l.push('')
-    if (f.promo.ativa) l.push(`Total pela tabela: ${reais(f.promo.original)} · ${PROMOCAO.nome} −${PROMOCAO.percentual}%`)
-    l.push(`Valor final: ${reais(total)} (${f.pecas} peças lavadas, contadas no local)`)
+    if (notas.trim()) l.push(`Obs.: ${notas.trim()}`)
+    l.push('', `Total a pagar: ${reais(f.total)}`, 'Pix combinado fora do app.')
+    if (whatsCliente) l.push(`Cliente: ${formatPhone(whatsCliente)}`)
     return l.join('\n')
   }
 
   function fecharValor() {
-    setSalvo(salvarContagem({ pedido: pedido.trim().toUpperCase() || undefined, cliente: whatsCliente ?? undefined, total, texto: texto() }))
+    const whatsCliente = normalizePhone(cliente)
+    setSalvo(salvarContagem({
+      pedido: codigo.trim().toUpperCase() || undefined,
+      cliente: whatsCliente ?? undefined,
+      lavadorNome: session!.name,
+      baseSugerida: sugerida,
+      baseConfirmada: f.baseCentavos,
+      produtos: f.produtos.map((p) => p.id),
+      total: f.total,
+      notas: notas.trim() || undefined,
+      texto: texto(),
+    }))
   }
 
   function limpar() {
-    setQtd({})
-    setPrecos({})
+    setCodigo('')
+    setBase(ORCAMENTO.volumes.media.centavos)
+    setSugerida(ORCAMENTO.volumes.media.centavos)
     setUsados({ esponja: false, detergente: false })
-    setPedido('')
     setCliente('')
+    setNotas('')
     setSalvo(null)
   }
 
   return (
     <Pagina largura="larga" tag="Prestador" direita={<BotaoLink variante="topo" to={ROTAS.areaPrestador}>← Minha área</BotaoLink>}>
       <Titulo sub={<>
-        O orçamento pela foto é só estimado. Agora que você lavou, marque quantas peças de cada item
-        foram lavadas: o app soma pela tabela e fecha o valor final.
-      </>}>Contagem pós-lavagem</Titulo>
+        A foto gerou só uma sugestão. No local, confirme o valor base (faixa {reais(ORCAMENTO.minCentavos)}–{reais(ORCAMENTO.maxCentavos)})
+        e marque se usou produtos seus.
+      </>}>Confirmar serviço no local</Titulo>
+
+      {pedidosAbertos.length > 0 && (
+        <Cartao titulo="Pedidos abertos neste aparelho">
+          <ul className="historico">
+            {pedidosAbertos.slice(0, 6).map((p) => (
+              <li key={p.id}>
+                <div>
+                  <strong>{p.id}</strong>
+                  <small>{p.nomeCliente ?? formatPhone(p.telefone)} · sugerido {reais(p.baseCentavos)}</small>
+                </div>
+                <Botao variante="secundario" onClick={() => carregarPedido(p.id)}>Usar</Botao>
+              </li>
+            ))}
+          </ul>
+        </Cartao>
+      )}
 
       <Cartao titulo="Pedido (opcional)">
-        <Campo rotulo="Código do pedido" value={pedido} onChange={(e) => setPedido(e.target.value)} placeholder="Ex.: K3F9QZ" maxLength={12} />
-        <Campo rotulo="WhatsApp do cliente (para enviar o valor final)" type="tel" inputMode="tel" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="(11) 91234-5678" />
+        <Campo
+          rotulo="Código do pedido"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          onBlur={() => { if (codigo.trim()) carregarPedido(codigo) }}
+          placeholder="Ex.: K3F9QZ"
+          maxLength={12}
+        />
+        <Campo
+          rotulo="WhatsApp do cliente (para enviar o valor final)"
+          type="tel"
+          inputMode="tel"
+          value={cliente}
+          onChange={(e) => setCliente(e.target.value)}
+          placeholder="(41) 99876-5432"
+        />
       </Cartao>
 
-      {ITENS_CONTAGEM.map((g) => (
-        <Cartao key={g.id} titulo={g.titulo}>
-          <table className="tabela" data-testid={`contagem-${g.id}`}>
-            <thead><tr><th>Item</th><th>Preço</th><th>Lavados</th><th>Subtotal</th></tr></thead>
-            <tbody>
-              {g.itens.map((i) => {
-                const unit = precoUnitario(i, precos)
-                const ops = opcoesPreco(i)
-                return (
-                  <tr key={i.id}>
-                    <td>{i.nome}{i.porque && <small className="nota-item">{i.ate ? 'Com gordura: escolha o preço' : 'Exceção: preço próprio'}</small>}</td>
-                    <td>
-                      {ops.length > 1 ? (
-                        <select
-                          aria-label={`Preço de ${i.nome}`}
-                          value={unit}
-                          onChange={(e) => { setSalvo(null); setPrecos((p) => ({ ...p, [i.id]: Number(e.target.value) })) }}
-                        >
-                          {ops.map((c) => <option key={c} value={c}>{reais(c)}</option>)}
-                        </select>
-                      ) : reais(unit)}
-                    </td>
-                    <td>
-                      <Quantidade nome={i.nome} rotulo={i.nome} valor={qtd[i.id] ?? 0}
-                        onMenos={() => ajustar(i.id, -1)} onMais={() => ajustar(i.id, 1)} onDigitar={(v) => definir(i.id, v)} />
-                    </td>
-                    <td>{reais((qtd[i.id] ?? 0) * unit)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </Cartao>
-      ))}
+      <Cartao titulo="Valor base confirmado">
+        <Apoio>
+          Sugestão da foto/IA: <strong>{reais(sugerida)}</strong>. Ajuste se a pia real for mais ou menos trabalho
+          (gordura queimada, volume diferente).
+        </Apoio>
+        <div className="ajuste-base" data-testid="ajuste-base">
+          <Botao variante="secundario" onClick={() => ajustarBase(-100)} aria-label="Diminuir R$ 1">− R$ 1</Botao>
+          <Botao variante="secundario" onClick={() => ajustarBase(-50)} aria-label="Diminuir R$ 0,50">− R$ 0,50</Botao>
+          <strong className="base-valor" data-testid="base-confirmada">{reais(base)}</strong>
+          <Botao variante="secundario" onClick={() => ajustarBase(50)} aria-label="Aumentar R$ 0,50">+ R$ 0,50</Botao>
+          <Botao variante="secundario" onClick={() => ajustarBase(100)} aria-label="Aumentar R$ 1">+ R$ 1</Botao>
+        </div>
+        <div className="volumes" role="group" aria-label="Atalhos de volume">
+          {(Object.keys(ORCAMENTO.volumes) as Array<keyof typeof ORCAMENTO.volumes>).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`volume ${base === ORCAMENTO.volumes[v].centavos ? 'ativo' : ''}`}
+              onClick={() => { setSalvo(null); setBase(ORCAMENTO.volumes[v].centavos) }}
+            >
+              <strong>{ORCAMENTO.volumes[v].rotulo}</strong>
+              <span>{reais(ORCAMENTO.volumes[v].centavos)}</span>
+            </button>
+          ))}
+        </div>
+        <Nota>Limite da faixa natural: {reais(ORCAMENTO.minCentavos)} a {reais(ORCAMENTO.maxCentavos)}.</Nota>
+      </Cartao>
 
       <Cartao titulo="Produtos de limpeza que você levou">
         <ul className="taxas">
           {LISTA_PRODUTOS.map((p) => (
             <li key={p}>
-              <Marcar checked={usados[p]} onChange={(v) => { setSalvo(null); setUsados((s) => ({ ...s, [p]: v })) }}>{PRODUTOS[p].nome}</Marcar>
+              <Marcar
+                checked={usados[p]}
+                onChange={(v) => { setSalvo(null); setUsados((s) => ({ ...s, [p]: v })) }}
+              >
+                {PRODUTOS[p].nome}
+              </Marcar>
               <span>{reais(PRODUTOS[p].centavos)}</span>
             </li>
           ))}
@@ -124,33 +179,39 @@ export default function ContagemPrestador() {
         <Apoio>Só marque se o cliente não tinha os produtos e você usou os seus.</Apoio>
       </Cartao>
 
+      <Cartao titulo="Observação (opcional)">
+        <Campo
+          rotulo="Nota para o cliente"
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Ex.: panela com gordura queimada — mantive o valor cheio"
+        />
+      </Cartao>
+
       <Cartao titulo="Valor final" destaque="resumo" aria-live="polite" data-testid="valor-final">
-        <LinhaValor rotulo="Peças lavadas">{f.pecas}</LinhaValor>
-        {f.promo.ativa ? (
-          <>
-            <LinhaValor rotulo="Total pela tabela" testId="final-original">{reais(f.promo.original)}</LinhaValor>
-            <LinhaValor rotulo={`${PROMOCAO.nome} (−${PROMOCAO.percentual}%)`}>− {reais(f.promo.desconto)}</LinhaValor>
-          </>
-        ) : null}
-        <LinhaValor rotulo="Valor final" total testId="final">{reais(total)}</LinhaValor>
-        <Nota>Soma das peças contadas × preço da tabela. Este é o valor a cobrar (Pix, fora do app).</Nota>
+        <LinhaValor rotulo="Sugestão (foto)">{reais(sugerida)}</LinhaValor>
+        <LinhaValor rotulo="Base confirmada">{reais(f.baseCentavos)}</LinhaValor>
+        {f.produtos.map((p) => (
+          <LinhaValor key={p.id} rotulo={p.nome}>{reais(p.centavos)}</LinhaValor>
+        ))}
+        <LinhaValor rotulo="Total a cobrar" total testId="final">{reais(f.total)}</LinhaValor>
+        <Nota>Este é o valor a combinar no Pix (fora do app).</Nota>
         {!salvo ? (
-          <Botao className="solicitar" onClick={fecharValor} disabled={f.pecas === 0} data-testid="fechar-valor">
-            Fechar valor final
+          <Botao className="solicitar" onClick={fecharValor} data-testid="fechar-valor">
+            Confirmar e fechar valor
           </Botao>
         ) : (
           <div className="pedido-ok" role="status" data-testid="contagem-ok">
-            <strong>Contagem {salvo.id} fechada: {reais(salvo.total)}</strong>
-            <span>Guardada neste aparelho.{whatsCliente ? ` Envie o valor para ${formatPhone(whatsCliente)}.` : ''}</span>
-            {whatsCliente && (
-              <BotaoExterno href={linkWhatsApp(whatsCliente, salvo.texto)} target="_blank" rel="noreferrer">
+            <strong>Serviço {salvo.id} fechado: {reais(salvo.total)}</strong>
+            <span>Guardado neste aparelho.</span>
+            {normalizePhone(cliente) && (
+              <BotaoExterno href={linkWhatsApp(normalizePhone(cliente)!, salvo.texto)} target="_blank" rel="noreferrer">
                 Enviar valor final no WhatsApp do cliente
               </BotaoExterno>
             )}
-            <Botao variante="texto" onClick={limpar}>Nova contagem</Botao>
+            <Botao variante="texto" onClick={limpar}>Novo serviço</Botao>
           </div>
         )}
-        {f.pecas === 0 && <Nota>Marque pelo menos uma peça lavada.</Nota>}
       </Cartao>
     </Pagina>
   )

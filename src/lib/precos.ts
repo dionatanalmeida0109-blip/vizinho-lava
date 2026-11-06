@@ -1,10 +1,22 @@
 /**
- * Tabela de preços base (valores em centavos), abaixo do mercado.
- * Todo o catálogo (como funciona, churrasco) é calculado a partir destas 4 bases:
- * mudar um valor aqui atualiza o app inteiro. Promoção fica em ./promocao.ts.
+ * Preço natural da lavagem de louça: R$ 20–30 (base sugerida pela IA local).
+ * Produtos do lavador são acréscimo separado. Sem faixa 80–150.
  */
-export type Utensilio = 'prato' | 'copo' | 'talher' | 'panela'
+export const ORCAMENTO = {
+  minCentavos: 2000,
+  maxCentavos: 3000,
+  /** Valores típicos por volume estimado na foto. */
+  volumes: {
+    pouca: { centavos: 2000, rotulo: 'Pouca louça' },
+    media: { centavos: 2500, rotulo: 'Louça média' },
+    cheia: { centavos: 3000, rotulo: 'Pia cheia' },
+  },
+} as const
 
+export type VolumeOrcamento = keyof typeof ORCAMENTO.volumes
+
+/** Mantido só como referência de utensílios (não define o total do serviço). */
+export type Utensilio = 'prato' | 'copo' | 'talher' | 'panela'
 export const PRECOS: Record<Utensilio, { nome: string; plural: string; centavos: number; nota?: string }> = {
   prato: { nome: 'Prato', plural: 'Pratos', centavos: 40 },
   copo: { nome: 'Copo', plural: 'Copos', centavos: 30 },
@@ -16,17 +28,16 @@ export const PRECOS: Record<Utensilio, { nome: string; plural: string; centavos:
     nota: 'Conforme a condição; lavador confirma.',
   },
 }
-
 export const UTENSILIOS: Utensilio[] = ['prato', 'copo', 'talher', 'panela']
 
 /**
- * Taxas opcionais quando o cliente não tem os produtos adequados e o lavador
- * leva os seus. Valores de referência (provisórios) — ajuste aqui.
+ * Taxas quando o cliente não tem os produtos e o lavador leva os seus.
+ * Valores explícitos e modestos (fora do preço base da pia).
  */
 export type Produto = 'detergente' | 'esponja'
 export const PRODUTOS: Record<Produto, { nome: string; centavos: number }> = {
-  esponja: { nome: 'Esponja (do lavador)', centavos: 150 },
-  detergente: { nome: 'Detergente (do lavador)', centavos: 100 },
+  esponja: { nome: 'Esponja (do lavador)', centavos: 200 },
+  detergente: { nome: 'Detergente (do lavador)', centavos: 300 },
 }
 export const LISTA_PRODUTOS: Produto[] = ['esponja', 'detergente']
 
@@ -37,6 +48,17 @@ export function reais(centavos: number): string {
   return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+export function limitarBase(centavos: number): number {
+  const passo = 50 // R$ 0,50
+  const arred = Math.round(centavos / passo) * passo
+  return Math.min(ORCAMENTO.maxCentavos, Math.max(ORCAMENTO.minCentavos, arred))
+}
+
+export function subtotalProdutos(marcados: Partial<Record<Produto, boolean>>): number {
+  return LISTA_PRODUTOS.filter((p) => marcados[p]).reduce((t, p) => t + PRODUTOS[p].centavos, 0)
+}
+
+/** @deprecated O total do serviço é a base R$ 20–30 + produtos; peça a peça não fecha o preço. */
 export function subtotalLouca(c: Contagem): number {
   return UTENSILIOS.reduce((t, u) => t + c[u] * PRECOS[u].centavos, 0)
 }
